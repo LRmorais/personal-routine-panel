@@ -30,6 +30,7 @@ export function useHabitCheckins() {
   const [today_, setToday] = useState<HabitCheckin>(emptyCheckin(today))
   const [recent, setRecent] = useState<Record<string, HabitCheckin>>({})
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const days = lastNDateStrings(STREAK_DAYS)
@@ -37,15 +38,24 @@ export function useHabitCheckins() {
       collection(db, 'users', user.uid, 'habitCheckins'),
       where(documentId(), 'in', days),
     )
-    return onSnapshot(q, (snapshot) => {
-      const byDate: Record<string, HabitCheckin> = {}
-      snapshot.docs.forEach((d) => {
-        byDate[d.id] = { date: d.id, ...d.data() } as HabitCheckin
-      })
-      setRecent(byDate)
-      setToday(byDate[today] ?? emptyCheckin(today))
-      setLoading(false)
-    })
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const byDate: Record<string, HabitCheckin> = {}
+        snapshot.docs.forEach((d) => {
+          byDate[d.id] = { date: d.id, ...d.data() } as HabitCheckin
+        })
+        setRecent(byDate)
+        setToday(byDate[today] ?? emptyCheckin(today))
+        setLoading(false)
+        setError(null)
+      },
+      (err) => {
+        console.error('useHabitCheckins onSnapshot error', err)
+        setError(err.message)
+        setLoading(false)
+      },
+    )
   }, [user.uid, today])
 
   const setWakeTime = (wakeTime: string) =>
@@ -66,5 +76,5 @@ export function useHabitCheckins() {
     (date) => recent[date] ?? emptyCheckin(date),
   )
 
-  return { today: today_, streakDays, loading, setWakeTime, toggleExercise }
+  return { today: today_, streakDays, loading, error, setWakeTime, toggleExercise }
 }

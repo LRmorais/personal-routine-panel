@@ -12,8 +12,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/apple-touch-icon.png'],
       manifest: {
-        name: 'ctrl_routine',
-        short_name: 'ctrl_routine',
+        name: 'Ritmo',
+        short_name: 'Ritmo',
         description: 'Painel pessoal de rotina — captura rápida, replanejamento e hábitos',
         start_url: '/',
         display: 'standalone',
@@ -27,11 +27,6 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
-        // Firebase Hosting reserves /__/auth/* to complete the OAuth redirect flow
-        // (signInWithRedirect). The SPA navigation fallback must not intercept it,
-        // or the service worker serves the cached app shell instead of letting the
-        // redirect actually complete, and sign-in hangs forever.
-        navigateFallbackDenylist: [/^\/__\/auth\//],
       },
     }),
   ],

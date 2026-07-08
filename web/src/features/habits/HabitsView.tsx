@@ -1,3 +1,4 @@
+import { ErrorBanner } from '../../components/ErrorBanner'
 import { useHabitCheckins } from './useHabitCheckins'
 
 const WEEKDAY_FORMAT = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', timeZone: 'America/Sao_Paulo' })
@@ -9,12 +10,14 @@ function weekdayLabel(dateString: string) {
 }
 
 export function HabitsView() {
-  const { today, streakDays, loading, setWakeTime, toggleExercise } = useHabitCheckins()
+  const { today, streakDays, loading, error, setWakeTime, toggleExercise } = useHabitCheckins()
 
   return (
     <div className="flex h-full flex-col p-4">
       <h2 className="text-lg font-semibold text-slate-100">Hábitos</h2>
       <p className="mt-1 text-sm text-slate-400">Check-in de hoje.</p>
+
+      <ErrorBanner message={error} />
 
       <div className="mt-4 rounded-lg border border-slate-800 bg-slate-900 p-4">
         <label className="flex items-center justify-between gap-3">

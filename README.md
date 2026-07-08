@@ -1,4 +1,4 @@
-# ctrl_routine — Painel de Rotina Pessoal
+# Ritmo — Painel de Rotina Pessoal
 
 PWA pessoal para captura de pensamentos recorrentes, replanejamento de tarefas, hábitos e agenda diária.
 

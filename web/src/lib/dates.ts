@@ -17,9 +17,21 @@ export function tomorrowDateString(fromDate: string = todayDateString()): string
   return dateStringFor(next)
 }
 
-export function isWeekday(dateString: string): boolean {
-  const day = new Date(`${dateString}T12:00:00Z`).getUTCDay()
-  return day >= 1 && day <= 5
+/** 0=domingo .. 6=sábado */
+export function weekdayNumber(dateString: string): number {
+  return new Date(`${dateString}T12:00:00Z`).getUTCDay()
+}
+
+const DATE_TIME_FORMAT = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: TIME_ZONE,
+  day: '2-digit',
+  month: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+})
+
+export function formatDateTime(date: Date): string {
+  return DATE_TIME_FORMAT.format(date)
 }
 
 /** Oldest first, e.g. lastNDateStrings(7) => the last 7 days ending today. */

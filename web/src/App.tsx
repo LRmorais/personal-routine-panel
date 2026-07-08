@@ -1,9 +1,17 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { AuthGate, useAuth } from './auth/AuthGate'
-import { InboxView } from './features/inbox/InboxView'
-import { ReplanView } from './features/replanning/ReplanView'
-import { HabitsView } from './features/habits/HabitsView'
-import { AgendaView } from './features/agenda/AgendaView'
+import { ActionSheet } from './components/ActionSheet'
+
+const InboxView = lazy(() => import('./features/inbox/InboxView').then((m) => ({ default: m.InboxView })))
+const ReplanView = lazy(() =>
+  import('./features/replanning/ReplanView').then((m) => ({ default: m.ReplanView })),
+)
+const HabitsView = lazy(() =>
+  import('./features/habits/HabitsView').then((m) => ({ default: m.HabitsView })),
+)
+const AgendaView = lazy(() =>
+  import('./features/agenda/AgendaView').then((m) => ({ default: m.AgendaView })),
+)
 
 const TABS = [
   { key: 'inbox', label: 'Inbox', view: InboxView },
@@ -24,6 +32,7 @@ function RoutineApp() {
     const fromUrl = new URLSearchParams(window.location.search).get('view')
     return isTabKey(fromUrl) ? fromUrl : 'inbox'
   })
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false)
 
   useEffect(() => {
     const url = new URL(window.location.href)
@@ -32,18 +41,28 @@ function RoutineApp() {
   }, [activeTab])
 
   const ActiveView = TABS.find((tab) => tab.key === activeTab)!.view
+  const initial = (user.email ?? '?')[0].toUpperCase()
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-slate-950 text-slate-100">
       <header className="flex items-center justify-between border-b border-slate-800 px-4 py-3 pt-[env(safe-area-inset-top)]">
-        <span className="font-semibold">ctrl_routine</span>
-        <button onClick={signOutUser} className="text-sm text-slate-400 active:text-slate-200">
-          Sair ({user.email})
+        <div className="flex items-center gap-2">
+          <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+          <span className="text-lg font-semibold tracking-tight text-slate-100">Ritmo</span>
+        </div>
+        <button
+          onClick={() => setAccountMenuOpen(true)}
+          aria-label="Conta"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-sm font-medium text-slate-200 active:bg-slate-700"
+        >
+          {initial}
         </button>
       </header>
 
       <main className="flex-1 overflow-y-auto">
-        <ActiveView />
+        <Suspense fallback={<div className="p-4 text-sm text-slate-500">Carregando...</div>}>
+          <ActiveView />
+        </Suspense>
       </main>
 
       <nav className="flex border-t border-slate-800 bg-slate-900 pb-[env(safe-area-inset-bottom)]">
@@ -59,6 +78,14 @@ function RoutineApp() {
           </button>
         ))}
       </nav>
+
+      {accountMenuOpen && (
+        <ActionSheet
+          title={user.email ?? ''}
+          onClose={() => setAccountMenuOpen(false)}
+          actions={[{ label: 'Sair', onClick: signOutUser, danger: true }]}
+        />
+      )}
     </div>
   )
 }

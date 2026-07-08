@@ -63,7 +63,10 @@ function LoginScreen() {
 
   return (
     <div className="flex h-dvh flex-col items-center justify-center gap-4 bg-slate-950 px-6 text-slate-100">
-      <h1 className="text-2xl font-semibold">ctrl_routine</h1>
+      <div className="flex items-center gap-2">
+        <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+        <h1 className="text-2xl font-semibold tracking-tight">Ritmo</h1>
+      </div>
       <form onSubmit={onSubmit} className="flex w-full max-w-xs flex-col gap-3">
         <input
           type="email"

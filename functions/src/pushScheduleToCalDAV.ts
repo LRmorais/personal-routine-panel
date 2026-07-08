@@ -50,7 +50,7 @@ export const pushScheduleToCalDAV = onCall(
     let pushed = 0
     for (const doc of blocksSnap.docs) {
       const block = doc.data() as ScheduleBlock
-      const cal = ical({ name: 'ctrl_routine' })
+      const cal = ical({ name: 'Ritmo' })
       const event = cal.createEvent({
         start: blockToDate(block.date, block.startTime),
         end: blockToDate(block.date, block.endTime),

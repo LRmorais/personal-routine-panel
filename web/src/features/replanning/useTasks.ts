@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../../auth/AuthGate'
 import { db } from '../../firebase'
 import { todayDateString, tomorrowDateString } from '../../lib/dates'
+import { capitalizeFirst } from '../../lib/text'
 
 export type TaskStatus = 'pending' | 'done'
 
@@ -37,10 +38,42 @@ export const REPLAN_REASONS: { value: ReplanReason; label: string }[] = [
 export type TaskItem = {
   id: string
   title: string
+  notes: string | null
   planDate: string
   status: TaskStatus
   pushCount: number
+  sourceInboxItemId: string | null
   createdAt: Timestamp | null
+}
+
+export type ReplanHistoryEntry = {
+  id: string
+  fromDate: string
+  toDate: string
+  reason: ReplanReason
+  reasonNote: string | null
+  decidedAt: Timestamp | null
+}
+
+export function useReplanHistory(taskId: string | null) {
+  const { user } = useAuth()
+  const [history, setHistory] = useState<ReplanHistoryEntry[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!taskId) return
+    setLoading(true)
+    const q = query(
+      collection(db, 'users', user.uid, 'tasks', taskId, 'replanHistory'),
+      orderBy('decidedAt', 'desc'),
+    )
+    return onSnapshot(q, (snapshot) => {
+      setHistory(snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as ReplanHistoryEntry))
+      setLoading(false)
+    })
+  }, [user.uid, taskId])
+
+  return { history, loading }
 }
 
 export function useTasks() {
@@ -71,19 +104,24 @@ export function useTasks() {
     )
   }, [user.uid])
 
-  const addTask = (title: string) => {
-    const trimmed = title.trim()
-    if (!trimmed) return
+  const addTask = (title: string, sourceInboxItemId: string | null = null) => {
+    const capitalized = capitalizeFirst(title)
+    if (!capitalized) return
     const today = todayDateString()
     return addDoc(collection(db, 'users', user.uid, 'tasks'), {
-      title: trimmed,
+      title: capitalized,
+      notes: null,
       planDate: today,
       originDate: today,
       status: 'pending' satisfies TaskStatus,
       pushCount: 0,
+      sourceInboxItemId,
       createdAt: serverTimestamp(),
     })
   }
+
+  const updateTaskNotes = (id: string, notes: string) =>
+    updateDoc(doc(db, 'users', user.uid, 'tasks', id), { notes: capitalizeFirst(notes) || null })
 
   const completeTask = (id: string) =>
     updateDoc(doc(db, 'users', user.uid, 'tasks', id), {
@@ -104,11 +142,11 @@ export function useTasks() {
       fromDate: task.planDate,
       toDate,
       reason,
-      reasonNote: reasonNote.trim() || null,
+      reasonNote: capitalizeFirst(reasonNote) || null,
       decidedAt: serverTimestamp(),
     })
     return batch.commit()
   }
 
-  return { tasks, loading, error, addTask, completeTask, cancelTask, pushTaskToTomorrow }
+  return { tasks, loading, error, addTask, completeTask, cancelTask, pushTaskToTomorrow, updateTaskNotes }
 }

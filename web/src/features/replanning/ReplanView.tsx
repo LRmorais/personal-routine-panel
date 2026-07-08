@@ -1,5 +1,13 @@
 import { useState, type FormEvent } from 'react'
-import { REPLAN_REASONS, useTasks, type ReplanReason, type TaskItem } from './useTasks'
+import { ActionSheet } from '../../components/ActionSheet'
+import { ErrorBanner } from '../../components/ErrorBanner'
+import {
+  REPLAN_REASONS,
+  useReplanHistory,
+  useTasks,
+  type ReplanReason,
+  type TaskItem,
+} from './useTasks'
 
 function PushTaskPanel({
   task,
@@ -54,10 +62,52 @@ function PushTaskPanel({
   )
 }
 
+function reasonLabel(reason: ReplanReason) {
+  return REPLAN_REASONS.find((r) => r.value === reason)?.label ?? reason
+}
+
+function TaskDetails({ task, onSaveNotes }: { task: TaskItem; onSaveNotes: (notes: string) => void }) {
+  const { history, loading } = useReplanHistory(task.id)
+  const [notes, setNotes] = useState(task.notes ?? '')
+
+  return (
+    <div className="mt-2 border-t border-slate-800 pt-2">
+      <textarea
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        onBlur={() => onSaveNotes(notes)}
+        placeholder="Notas (opcional)"
+        rows={2}
+        className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500"
+      />
+      {task.pushCount > 0 && (
+        <div className="mt-2">
+          <p className="text-xs uppercase tracking-wide text-slate-500">
+            Histórico de adiamento ({task.pushCount}x)
+          </p>
+          {loading && <p className="text-xs text-slate-500">Carregando...</p>}
+          <ul className="mt-1 flex flex-col gap-1">
+            {history.map((h) => (
+              <li key={h.id} className="text-xs text-slate-400">
+                {h.fromDate} → {h.toDate}: {reasonLabel(h.reason)}
+                {h.reasonNote && ` — "${h.reasonNote}"`}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function ReplanView() {
-  const { tasks, loading, error, addTask, completeTask, cancelTask, pushTaskToTomorrow } = useTasks()
+  const { tasks, loading, error, addTask, completeTask, cancelTask, pushTaskToTomorrow, updateTaskNotes } =
+    useTasks()
   const [title, setTitle] = useState('')
   const [pushingTaskId, setPushingTaskId] = useState<string | null>(null)
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null)
+  const [menuTaskId, setMenuTaskId] = useState<string | null>(null)
+  const menuTask = tasks.find((t) => t.id === menuTaskId) ?? null
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -92,9 +142,26 @@ export function ReplanView() {
         </button>
       </form>
 
-      {error && <p className="mt-3 text-sm text-red-400">Erro ao carregar: {error}</p>}
+      <ErrorBanner message={error} />
 
-      <div className="mt-6 flex flex-1 flex-col gap-2 overflow-y-auto">
+      {tasks.length > 0 && (
+        <div className="mt-4">
+          <div className="flex items-center justify-between text-xs text-slate-400">
+            <span>Progresso de hoje</span>
+            <span>
+              {done.length}/{tasks.length}
+            </span>
+          </div>
+          <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-800">
+            <div
+              className="h-full rounded-full bg-green-500 transition-all duration-500"
+              style={{ width: `${(done.length / tasks.length) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="mt-4 flex flex-1 flex-col gap-2 overflow-y-auto">
         {loading && <p className="text-sm text-slate-500">Carregando...</p>}
         {!loading && tasks.length === 0 && (
           <p className="text-sm text-slate-500">Nenhuma tarefa hoje ainda.</p>
@@ -114,49 +181,83 @@ export function ReplanView() {
           ) : (
             <div
               key={task.id}
-              className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2.5"
+              className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2.5"
             >
-              <span className="text-slate-100">{task.title}</span>
-              <div className="flex shrink-0 gap-2">
+              <div className="flex items-center gap-3">
                 <button
                   onClick={() => completeTask(task.id)}
-                  className="text-sm text-green-400 active:text-green-300"
+                  aria-label="Concluir"
+                  className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-600 active:border-green-500"
+                />
+                <button
+                  onClick={() => setExpandedTaskId(expandedTaskId === task.id ? null : task.id)}
+                  className="flex-1 text-left text-slate-100"
                 >
-                  Concluir
+                  {task.title}
+                  {task.pushCount > 0 && (
+                    <span className="ml-2 text-xs text-amber-400">adiada {task.pushCount}x</span>
+                  )}
                 </button>
                 <button
-                  onClick={() => setPushingTaskId(task.id)}
-                  className="text-sm text-amber-400 active:text-amber-300"
+                  onClick={() => setMenuTaskId(task.id)}
+                  aria-label="Mais ações"
+                  className="shrink-0 px-1 text-lg leading-none text-slate-500 active:text-slate-300"
                 >
-                  Adiar
-                </button>
-                <button
-                  onClick={() => cancelTask(task.id)}
-                  className="text-sm text-slate-500 active:text-slate-300"
-                >
-                  Cancelar
+                  ⋯
                 </button>
               </div>
+              {expandedTaskId === task.id && (
+                <TaskDetails task={task} onSaveNotes={(notes) => updateTaskNotes(task.id, notes)} />
+              )}
             </div>
           ),
         )}
 
         {done.length > 0 && (
           <div className="mt-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Concluídas</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">
+              Concluídas · {done.length} 🎉
+            </p>
             <div className="mt-2 flex flex-col gap-2">
               {done.map((task) => (
                 <div
                   key={task.id}
-                  className="rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-2.5 text-slate-500 line-through"
+                  className="flex animate-[task-complete-pop_0.35s_ease-out] items-center gap-2.5 rounded-lg border border-green-900 bg-green-950/30 px-3 py-2.5"
                 >
-                  {task.title}
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs text-white">
+                    ✓
+                  </span>
+                  <span className="flex-1 text-slate-400 line-through decoration-green-700">
+                    {task.title}
+                  </span>
+                  <button
+                    onClick={() => setMenuTaskId(task.id)}
+                    aria-label="Mais ações"
+                    className="shrink-0 px-1 text-lg leading-none text-slate-500 active:text-slate-300"
+                  >
+                    ⋯
+                  </button>
                 </div>
               ))}
             </div>
           </div>
         )}
       </div>
+
+      {menuTask && (
+        <ActionSheet
+          title={menuTask.title}
+          onClose={() => setMenuTaskId(null)}
+          actions={
+            menuTask.status === 'pending'
+              ? [
+                  { label: 'Adiar para amanhã', onClick: () => setPushingTaskId(menuTask.id) },
+                  { label: 'Excluir', onClick: () => cancelTask(menuTask.id), danger: true },
+                ]
+              : [{ label: 'Excluir', onClick: () => cancelTask(menuTask.id), danger: true }]
+          }
+        />
+      )}
     </div>
   )
 }

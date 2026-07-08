@@ -16,3 +16,17 @@ body {
   margin: 0;
   -webkit-tap-highlight-color: transparent;
 }
+
+@keyframes task-complete-pop {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
+  60% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

@@ -1,8 +1,9 @@
-import { addDoc, collection, deleteDoc, doc, onSnapshot, query, where } from 'firebase/firestore'
+import { addDoc, collection, deleteDoc, doc, onSnapshot, query, updateDoc, where } from 'firebase/firestore'
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../auth/AuthGate'
 import { db } from '../../firebase'
-import { isWeekday, todayDateString } from '../../lib/dates'
+import { todayDateString, weekdayNumber } from '../../lib/dates'
+import { capitalizeFirst } from '../../lib/text'
 import type { RecurringTemplate } from './useRecurringTemplates'
 
 export type ScheduleBlockType = 'standup' | 'adhoc_call' | 'focus_block' | 'other'
@@ -23,13 +24,23 @@ export function useScheduleBlocks() {
   const today = todayDateString()
   const [blocks, setBlocks] = useState<ScheduleBlock[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const q = query(collection(db, 'users', user.uid, 'scheduleBlocks'), where('date', '==', today))
-    return onSnapshot(q, (snapshot) => {
-      setBlocks(snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as ScheduleBlock))
-      setLoading(false)
-    })
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        setBlocks(snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as ScheduleBlock))
+        setLoading(false)
+        setError(null)
+      },
+      (err) => {
+        console.error('useScheduleBlocks onSnapshot error', err)
+        setError(err.message)
+        setLoading(false)
+      },
+    )
   }, [user.uid, today])
 
   const sorted = useMemo(
@@ -48,19 +59,37 @@ export function useScheduleBlocks() {
   }, [sorted])
 
   const addBlock = (block: Omit<ScheduleBlock, 'id' | 'date'>) =>
-    addDoc(collection(db, 'users', user.uid, 'scheduleBlocks'), { ...block, date: today })
+    addDoc(collection(db, 'users', user.uid, 'scheduleBlocks'), {
+      ...block,
+      title: capitalizeFirst(block.title),
+      date: today,
+    })
 
   const deleteBlock = (id: string) => deleteDoc(doc(db, 'users', user.uid, 'scheduleBlocks', id))
+
+  const updateBlock = (id: string, block: Omit<ScheduleBlock, 'id' | 'date'>) =>
+    updateDoc(doc(db, 'users', user.uid, 'scheduleBlocks', id), {
+      ...block,
+      title: capitalizeFirst(block.title),
+    })
 
   // Client-side stand-in for the scheduled Cloud Function that would otherwise
   // materialize today's recurring blocks at 6am (Cloud Scheduler requires Blaze).
   const materializeFromTemplates = (templates: RecurringTemplate[]) => {
-    if (!isWeekday(today)) return
+    const todayWeekday = weekdayNumber(today)
     const existingTitles = new Set(blocks.map((b) => b.title))
     templates
-      .filter((t) => !existingTitles.has(t.title))
+      .filter((t) => (t.weekdays ?? [1, 2, 3, 4, 5]).includes(todayWeekday) && !existingTitles.has(t.title))
       .forEach((t) => addBlock({ title: t.title, startTime: t.startTime, endTime: t.endTime, type: t.type }))
   }
 
-  return { blocks: blocksWithOverlap, loading, addBlock, deleteBlock, materializeFromTemplates }
+  return {
+    blocks: blocksWithOverlap,
+    loading,
+    error,
+    addBlock,
+    deleteBlock,
+    updateBlock,
+    materializeFromTemplates,
+  }
 }
