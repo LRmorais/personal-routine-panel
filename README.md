@@ -13,19 +13,28 @@ Fases de construção: 0) scaffolding + auth + instalabilidade — 1) captura r�
 ## Setup inicial (passos manuais, uma vez)
 
 1. **Versão do Node**: este projeto usa Node 25 via `nvm` (`.nvmrc` na raiz). Rode `nvm use` antes de qualquer comando.
-2. **Criar o projeto no Firebase Console** (console.firebase.google.com): região `southamerica-east1`, ativar **Firestore**, **Authentication** (provedor Google) e **Cloud Messaging**. Fazer upgrade para o plano **Blaze** (necessário para Cloud Scheduler e chamadas HTTP de saída usadas nas Fases 2.5 e 4).
+2. **Criar o projeto no Firebase Console** (console.firebase.google.com): região `southamerica-east1`, ativar **Firestore** e **Authentication** (provedor **E-mail/senha** — não Google, ver nota abaixo).
 3. **Instalar a CLI do Firebase e logar**:
    ```bash
    npm install -g firebase-tools
    firebase login
    ```
-4. **Linkar este diretório ao projeto criado**:
-   ```bash
-   firebase use --add
-   ```
-   Isso gera o `.firebaserc` (não versionado neste ponto porque o projeto ainda não existia).
-5. **Configurar variáveis de ambiente do frontend**: copie `web/.env.example` para `web/.env.local` e preencha com os dados do app web (Configurações do projeto → Geral → Seus apps → SDK).
-6. **Travar as regras de segurança no seu usuário**: depois do primeiro login no app, pegue seu `uid` real no Firebase Console (Authentication → Users) e substitua `REPLACE_WITH_ALEX_FIREBASE_UID` em `firestore.rules`.
+4. **Linkar este diretório ao projeto criado**: `firebase use --add`.
+5. **Configurar variáveis de ambiente do frontend**: copie `web/.env.example` para `web/.env.local` (ou `.env`) e preencha com os dados do app web (Configurações do projeto → Geral → Seus apps → SDK). Use o domínio do Hosting (`<project-id>.web.app`) como `VITE_FIREBASE_AUTH_DOMAIN`.
+6. **Travar as regras de segurança no seu usuário**: depois de criar sua conta no app (tela "Primeiro acesso"), pegue seu `uid` no Firebase Console (Authentication → Users) e substitua em `firestore.rules`.
+
+> **Por que e-mail/senha e não "Entrar com Google"**: o Google bloqueia login OAuth dentro de WebViews embutidas (política deles desde 2016) — e um PWA instalado na tela de início do iOS roda numa WebView desse tipo. Não tem contorno no lado do app; e-mail/senha funciona normalmente porque não depende de redirecionar pra fora do app.
+
+### Cloud Functions (Fase 1+) — precisa do plano Blaze
+
+Funções (`captureInboxItem` e as próximas) só podem ser implantadas com o projeto no plano **Blaze** (pay-as-you-go — tem tier gratuito generoso, custo esperado ~$0/mês nesse volume). Enquanto isso não for feito, o código já está pronto em `functions/src/` mas fica sem deploy — o app funciona normalmente sem essa parte (o inbox web já funciona 100% sem Functions).
+
+Quando for ativar o Blaze e implantar:
+```bash
+firebase functions:secrets:set SHORTCUT_WEBHOOK_SECRET   # cria um segredo aleatório, guarde o valor
+firebase deploy --only functions
+```
+A URL da função aparece na saída do deploy. Configure um Atalho no iPhone (app Atalhos → Novo Atalho → "Pedir Texto" via Siri/Botão de Ação → "Obter Conteúdo de URL": método POST, corpo JSON `{"text": <Texto Fornecido>}`, cabeçalho `X-Webhook-Secret: <valor do segredo>`) apontando pra essa URL.
 
 ## Rodando localmente
 
