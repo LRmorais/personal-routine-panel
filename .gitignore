@@ -1,0 +1,13 @@
+node_modules/
+web/dist/
+functions/lib/
+.firebase/
+.env
+.env.local
+.env.*.local
+firebase-debug.log
+firebase-debug.*.log
+ui-debug.log
+.DS_Store
+.idea/
+serviceAccountKey.json

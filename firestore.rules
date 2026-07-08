@@ -1,0 +1,12 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Single-user app: only Alex's own uid may read/write his data.
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == uid
+        && request.auth.uid == "5zSIjvVTXFWhjE95gHubYdSChff1";
+    }
+  }
+}

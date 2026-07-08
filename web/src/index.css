@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  /* the page itself never scrolls — each view manages its own scrollable area */
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  -webkit-tap-highlight-color: transparent;
+}
