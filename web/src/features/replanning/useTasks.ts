@@ -1,0 +1,114 @@
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  updateDoc,
+  where,
+  writeBatch,
+  type Timestamp,
+} from 'firebase/firestore'
+import { useEffect, useState } from 'react'
+import { useAuth } from '../../auth/AuthGate'
+import { db } from '../../firebase'
+import { todayDateString, tomorrowDateString } from '../../lib/dates'
+
+export type TaskStatus = 'pending' | 'done'
+
+export type ReplanReason =
+  | 'ran_out_of_time'
+  | 'procrastinated'
+  | 'deprioritized'
+  | 'blocked_by_other'
+  | 'other'
+
+export const REPLAN_REASONS: { value: ReplanReason; label: string }[] = [
+  { value: 'ran_out_of_time', label: 'Não deu tempo' },
+  { value: 'procrastinated', label: 'Procrastinei' },
+  { value: 'deprioritized', label: 'Despriorizei' },
+  { value: 'blocked_by_other', label: 'Bloqueado por outra coisa' },
+  { value: 'other', label: 'Outro motivo' },
+]
+
+export type TaskItem = {
+  id: string
+  title: string
+  planDate: string
+  status: TaskStatus
+  pushCount: number
+  createdAt: Timestamp | null
+}
+
+export function useTasks() {
+  const { user } = useAuth()
+  const [tasks, setTasks] = useState<TaskItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const today = todayDateString()
+    const q = query(
+      collection(db, 'users', user.uid, 'tasks'),
+      where('planDate', '==', today),
+      orderBy('createdAt', 'asc'),
+    )
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        setTasks(snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as TaskItem))
+        setLoading(false)
+        setError(null)
+      },
+      (err) => {
+        console.error('useTasks onSnapshot error', err)
+        setError(err.message)
+        setLoading(false)
+      },
+    )
+  }, [user.uid])
+
+  const addTask = (title: string) => {
+    const trimmed = title.trim()
+    if (!trimmed) return
+    const today = todayDateString()
+    return addDoc(collection(db, 'users', user.uid, 'tasks'), {
+      title: trimmed,
+      planDate: today,
+      originDate: today,
+      status: 'pending' satisfies TaskStatus,
+      pushCount: 0,
+      createdAt: serverTimestamp(),
+    })
+  }
+
+  const completeTask = (id: string) =>
+    updateDoc(doc(db, 'users', user.uid, 'tasks', id), {
+      status: 'done' satisfies TaskStatus,
+      doneAt: serverTimestamp(),
+    })
+
+  const cancelTask = (id: string) => deleteDoc(doc(db, 'users', user.uid, 'tasks', id))
+
+  const pushTaskToTomorrow = (task: TaskItem, reason: ReplanReason, reasonNote: string) => {
+    const toDate = tomorrowDateString(task.planDate)
+    const batch = writeBatch(db)
+    batch.update(doc(db, 'users', user.uid, 'tasks', task.id), {
+      planDate: toDate,
+      pushCount: task.pushCount + 1,
+    })
+    batch.set(doc(collection(db, 'users', user.uid, 'tasks', task.id, 'replanHistory')), {
+      fromDate: task.planDate,
+      toDate,
+      reason,
+      reasonNote: reasonNote.trim() || null,
+      decidedAt: serverTimestamp(),
+    })
+    return batch.commit()
+  }
+
+  return { tasks, loading, error, addTask, completeTask, cancelTask, pushTaskToTomorrow }
+}

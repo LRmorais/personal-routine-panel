@@ -26,6 +26,7 @@ export function useInboxItems() {
   const { user } = useAuth()
   const [items, setItems] = useState<InboxItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const q = query(
@@ -33,10 +34,19 @@ export function useInboxItems() {
       where('status', '==', 'open'),
       orderBy('createdAt', 'desc'),
     )
-    return onSnapshot(q, (snapshot) => {
-      setItems(snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as InboxItem))
-      setLoading(false)
-    })
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        setItems(snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as InboxItem))
+        setLoading(false)
+        setError(null)
+      },
+      (err) => {
+        console.error('useInboxItems onSnapshot error', err)
+        setError(err.message)
+        setLoading(false)
+      },
+    )
   }, [user.uid])
 
   const addItem = (text: string) => {
@@ -58,5 +68,5 @@ export function useInboxItems() {
 
   const discardItem = (id: string) => deleteDoc(doc(db, 'users', user.uid, 'inboxItems', id))
 
-  return { items, loading, addItem, resolveItem, discardItem }
+  return { items, loading, error, addItem, resolveItem, discardItem }
 }

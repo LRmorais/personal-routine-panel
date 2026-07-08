@@ -27,14 +27,18 @@ Fases de construção: 0) scaffolding + auth + instalabilidade — 1) captura r�
 
 ### Cloud Functions (Fase 1+) — precisa do plano Blaze
 
-Funções (`captureInboxItem` e as próximas) só podem ser implantadas com o projeto no plano **Blaze** (pay-as-you-go — tem tier gratuito generoso, custo esperado ~$0/mês nesse volume). Enquanto isso não for feito, o código já está pronto em `functions/src/` mas fica sem deploy — o app funciona normalmente sem essa parte (o inbox web já funciona 100% sem Functions).
+Funções (`captureInboxItem`, `pushScheduleToCalDAV` e as próximas) só podem ser implantadas com o projeto no plano **Blaze** (pay-as-you-go — tem tier gratuito generoso, custo esperado ~$0/mês nesse volume). Enquanto isso não for feito, o código já está pronto em `functions/src/` mas fica sem deploy — o app funciona normalmente sem essa parte (inbox, tarefas, hábitos e agenda já funcionam 100% sem Functions; a agenda usa uma materialização client-side dos modelos recorrentes em vez do cron job que dependeria de Blaze).
 
 Quando for ativar o Blaze e implantar:
 ```bash
-firebase functions:secrets:set SHORTCUT_WEBHOOK_SECRET   # cria um segredo aleatório, guarde o valor
+firebase functions:secrets:set SHORTCUT_WEBHOOK_SECRET   # segredo aleatório pro webhook do Atalho
+firebase functions:secrets:set ICLOUD_USERNAME           # seu Apple ID (e-mail)
+firebase functions:secrets:set ICLOUD_APP_PASSWORD       # senha de app gerada em appleid.apple.com
 firebase deploy --only functions
 ```
-A URL da função aparece na saída do deploy. Configure um Atalho no iPhone (app Atalhos → Novo Atalho → "Pedir Texto" via Siri/Botão de Ação → "Obter Conteúdo de URL": método POST, corpo JSON `{"text": <Texto Fornecido>}`, cabeçalho `X-Webhook-Secret: <valor do segredo>`) apontando pra essa URL.
+A URL da `captureInboxItem` aparece na saída do deploy. Configure um Atalho no iPhone (app Atalhos → Novo Atalho → "Pedir Texto" via Siri/Botão de Ação → "Obter Conteúdo de URL": método POST, corpo JSON `{"text": <Texto Fornecido>}`, cabeçalho `X-Webhook-Secret: <valor do segredo>`) apontando pra essa URL.
+
+`pushScheduleToCalDAV` é `callable` (chamada pelo próprio app, não uma URL pública) e não está com um botão na interface ainda — plano é adicionar isso quando o Blaze estiver ativo, já que sem deploy não há o que testar. É a parte de maior incerteza técnica do projeto (integração CalDAV com iCloud via `tsdav`), então fica pra ser validada por último.
 
 ## Rodando localmente
 

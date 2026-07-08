@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useInboxItems } from './useInboxItems'
 
 export function InboxView() {
-  const { items, loading, addItem, resolveItem, discardItem } = useInboxItems()
+  const { items, loading, error, addItem, resolveItem, discardItem } = useInboxItems()
   const [text, setText] = useState('')
 
   const onSubmit = (e: FormEvent) => {
@@ -32,6 +32,8 @@ export function InboxView() {
           Adicionar
         </button>
       </form>
+
+      {error && <p className="mt-3 text-sm text-red-400">Erro ao carregar: {error}</p>}
 
       <ul className="mt-6 flex flex-1 flex-col gap-2 overflow-y-auto">
         {loading && <li className="text-sm text-slate-500">Carregando...</li>}
