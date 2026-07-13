@@ -24,20 +24,21 @@ export type InboxItem = {
   text: string
   createdAt: Timestamp | null
   status: 'open' | 'snoozed' | 'resolved' | 'converted_to_task'
-  snoozedUntil: Timestamp | null
   resolvedAt: Timestamp | null
 }
 
 export function useInboxItems() {
   const { user } = useAuth()
   const [openItems, setOpenItems] = useState<InboxItem[]>([])
-  const [snoozedItems, setSnoozedItems] = useState<InboxItem[]>([])
   const [resolvedItems, setResolvedItems] = useState<InboxItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const reactivatingRef = useRef(new Set<string>())
 
   useEffect(() => {
+    // status "in" ['open','snoozed'] instead of just "open": snooze was removed from the UI
+    // (replaced by "Agendar"), but items snoozed under the old flow still need a way back —
+    // any leftover 'snoozed' doc is migrated to 'open' the moment it's read here.
     const q = query(
       collection(db, 'users', user.uid, 'inboxItems'),
       where('status', 'in', ['open', 'snoozed']),
@@ -47,28 +48,16 @@ export function useInboxItems() {
       q,
       (snapshot) => {
         const items = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as InboxItem)
-        const now = Date.now()
-        const open: InboxItem[] = []
-        const snoozed: InboxItem[] = []
-
         for (const item of items) {
-          const due = item.status === 'snoozed' && (item.snoozedUntil?.toMillis() ?? Infinity) <= now
-          if (item.status === 'open' || due) {
-            open.push(item)
-            if (due && !reactivatingRef.current.has(item.id)) {
-              reactivatingRef.current.add(item.id)
-              updateDoc(doc(db, 'users', user.uid, 'inboxItems', item.id), {
-                status: 'open',
-                snoozedUntil: null,
-              }).finally(() => reactivatingRef.current.delete(item.id))
-            }
-          } else {
-            snoozed.push(item)
+          if (item.status === 'snoozed' && !reactivatingRef.current.has(item.id)) {
+            reactivatingRef.current.add(item.id)
+            updateDoc(doc(db, 'users', user.uid, 'inboxItems', item.id), {
+              status: 'open',
+              snoozedUntil: null,
+            }).finally(() => reactivatingRef.current.delete(item.id))
           }
         }
-
-        setOpenItems(open)
-        setSnoozedItems(snoozed)
+        setOpenItems(items)
         setLoading(false)
         setError(null)
       },
@@ -117,29 +106,14 @@ export function useInboxItems() {
       linkedTaskId: taskId,
     })
 
-  const snoozeItem = (id: string, until: Date) =>
-    updateDoc(doc(db, 'users', user.uid, 'inboxItems', id), {
-      status: 'snoozed',
-      snoozedUntil: Timestamp.fromDate(until),
-    })
-
-  const reactivateItem = (id: string) =>
-    updateDoc(doc(db, 'users', user.uid, 'inboxItems', id), {
-      status: 'open',
-      snoozedUntil: null,
-    })
-
   return {
     items: openItems,
-    snoozedItems,
     resolvedItems,
     loading,
     error,
     addItem,
     resolveItem,
     discardItem,
-    snoozeItem,
-    reactivateItem,
     markConvertedToTask,
   }
 }

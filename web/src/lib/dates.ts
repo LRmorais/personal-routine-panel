@@ -9,12 +9,16 @@ export function todayDateString(): string {
   return dateStringFor(new Date())
 }
 
-export function tomorrowDateString(fromDate: string = todayDateString()): string {
+export function addDays(fromDate: string, delta: number): string {
   const [year, month, day] = fromDate.split('-').map(Number)
   // noon UTC avoids DST/timezone edge cases from shifting the calendar day
   const next = new Date(Date.UTC(year, month - 1, day, 12))
-  next.setUTCDate(next.getUTCDate() + 1)
+  next.setUTCDate(next.getUTCDate() + delta)
   return dateStringFor(next)
+}
+
+export function tomorrowDateString(fromDate: string = todayDateString()): string {
+  return addDays(fromDate, 1)
 }
 
 /** 0=domingo .. 6=sábado */
@@ -32,6 +36,21 @@ const DATE_TIME_FORMAT = new Intl.DateTimeFormat('pt-BR', {
 
 export function formatDateTime(date: Date): string {
   return DATE_TIME_FORMAT.format(date)
+}
+
+const DAY_LABEL_FORMAT = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: TIME_ZONE,
+  weekday: 'short',
+  day: '2-digit',
+  month: 'short',
+})
+
+export function formatDayLabel(dateString: string): string {
+  const today = todayDateString()
+  if (dateString === today) return 'Hoje'
+  if (dateString === addDays(today, 1)) return 'Amanhã'
+  if (dateString === addDays(today, -1)) return 'Ontem'
+  return DAY_LABEL_FORMAT.format(new Date(`${dateString}T12:00:00Z`)).replace('.', '')
 }
 
 /** Oldest first, e.g. lastNDateStrings(7) => the last 7 days ending today. */

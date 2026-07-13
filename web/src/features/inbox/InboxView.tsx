@@ -1,27 +1,34 @@
 import { useState, type FormEvent } from 'react'
 import { ActionSheet } from '../../components/ActionSheet'
 import { ErrorBanner } from '../../components/ErrorBanner'
-import { formatDateTime, tomorrowDateString } from '../../lib/dates'
+import { formatDateTime, todayDateString } from '../../lib/dates'
 import { useTasks } from '../replanning/useTasks'
 import { useInboxItems, type InboxItem } from './useInboxItems'
 
-const SNOOZE_OPTIONS: { label: string; until: () => Date }[] = [
-  { label: '+3h', until: () => new Date(Date.now() + 3 * 60 * 60 * 1000) },
-  { label: 'Amanhã 9h', until: () => new Date(`${tomorrowDateString()}T09:00:00-03:00`) },
-]
+function SchedulePicker({
+  onPick,
+  onCancel,
+}: {
+  onPick: (date: string) => void
+  onCancel: () => void
+}) {
+  const [date, setDate] = useState(todayDateString())
 
-function SnoozePicker({ onPick, onCancel }: { onPick: (until: Date) => void; onCancel: () => void }) {
   return (
     <div className="flex items-center gap-2">
-      {SNOOZE_OPTIONS.map((opt) => (
-        <button
-          key={opt.label}
-          onClick={() => onPick(opt.until())}
-          className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300 active:bg-slate-800"
-        >
-          {opt.label}
-        </button>
-      ))}
+      <input
+        type="date"
+        value={date}
+        min={todayDateString()}
+        onChange={(e) => setDate(e.target.value)}
+        className="rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100"
+      />
+      <button
+        onClick={() => onPick(date)}
+        className="rounded-full bg-blue-600 px-3 py-1 text-xs font-medium text-white active:bg-blue-700"
+      >
+        Agendar
+      </button>
       <button onClick={onCancel} className="text-xs text-slate-500 active:text-slate-300">
         Cancelar
       </button>
@@ -29,31 +36,16 @@ function SnoozePicker({ onPick, onCancel }: { onPick: (until: Date) => void; onC
   )
 }
 
-function formatSnoozedUntil(item: InboxItem) {
-  return item.snoozedUntil ? formatDateTime(item.snoozedUntil.toDate()) : ''
-}
-
 function formatCreatedAt(item: InboxItem) {
   return item.createdAt ? formatDateTime(item.createdAt.toDate()) : ''
 }
 
 export function InboxView() {
-  const {
-    items,
-    snoozedItems,
-    resolvedItems,
-    loading,
-    error,
-    addItem,
-    resolveItem,
-    discardItem,
-    snoozeItem,
-    reactivateItem,
-    markConvertedToTask,
-  } = useInboxItems()
+  const { items, resolvedItems, loading, error, addItem, resolveItem, discardItem, markConvertedToTask } =
+    useInboxItems()
   const { addTask } = useTasks()
   const [text, setText] = useState('')
-  const [snoozingId, setSnoozingId] = useState<string | null>(null)
+  const [schedulingId, setSchedulingId] = useState<string | null>(null)
   const [menuItemId, setMenuItemId] = useState<string | null>(null)
   const menuItem = items.find((i) => i.id === menuItemId) ?? null
   const resolvedMenuItem = resolvedItems.find((i) => i.id === menuItemId) ?? null
@@ -64,8 +56,8 @@ export function InboxView() {
     setText('')
   }
 
-  const sendToTasks = async (item: InboxItem) => {
-    const taskRef = await addTask(item.text, item.id)
+  const scheduleAsTask = async (item: InboxItem, planDate: string) => {
+    const taskRef = await addTask(item.text, item.id, planDate)
     if (taskRef) await markConvertedToTask(item.id, taskRef.id)
   }
 
@@ -95,7 +87,7 @@ export function InboxView() {
 
       <ul className="mt-6 flex flex-1 flex-col gap-2 overflow-y-auto">
         {loading && <li className="text-sm text-slate-500">Carregando...</li>}
-        {!loading && items.length === 0 && snoozedItems.length === 0 && (
+        {!loading && items.length === 0 && (
           <li className="text-sm text-slate-500">Nada pendente por aqui.</li>
         )}
         {items.map((item) => (
@@ -121,42 +113,17 @@ export function InboxView() {
                 ⋯
               </button>
             </div>
-            {snoozingId === item.id && (
-              <SnoozePicker
-                onPick={(until) => {
-                  snoozeItem(item.id, until)
-                  setSnoozingId(null)
+            {schedulingId === item.id && (
+              <SchedulePicker
+                onPick={(date) => {
+                  scheduleAsTask(item, date)
+                  setSchedulingId(null)
                 }}
-                onCancel={() => setSnoozingId(null)}
+                onCancel={() => setSchedulingId(null)}
               />
             )}
           </li>
         ))}
-
-        {snoozedItems.length > 0 && (
-          <>
-            <li className="mt-4 text-xs uppercase tracking-wide text-slate-500">Adiados</li>
-            {snoozedItems.map((item) => (
-              <li
-                key={item.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-2.5"
-              >
-                <div>
-                  <span className="text-slate-400">{item.text}</span>
-                  <p className="text-xs text-slate-600">
-                    capturado em {formatCreatedAt(item)} · volta em {formatSnoozedUntil(item)}
-                  </p>
-                </div>
-                <button
-                  onClick={() => reactivateItem(item.id)}
-                  className="shrink-0 text-sm text-slate-500 active:text-slate-300"
-                >
-                  Reativar agora
-                </button>
-              </li>
-            ))}
-          </>
-        )}
 
         {resolvedItems.length > 0 && (
           <>
@@ -193,8 +160,8 @@ export function InboxView() {
           title={menuItem.text}
           onClose={() => setMenuItemId(null)}
           actions={[
-            { label: 'Adiar', onClick: () => setSnoozingId(menuItem.id) },
-            { label: 'Enviar para tarefas de hoje', onClick: () => sendToTasks(menuItem) },
+            { label: 'Agendar', onClick: () => setSchedulingId(menuItem.id) },
+            { label: 'Enviar para tarefas de hoje', onClick: () => scheduleAsTask(menuItem, todayDateString()) },
             { label: 'Descartar', onClick: () => discardItem(menuItem.id), danger: true },
           ]}
         />

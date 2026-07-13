@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -76,17 +77,16 @@ export function useReplanHistory(taskId: string | null) {
   return { history, loading }
 }
 
-export function useTasks() {
+export function useTasks(date: string = todayDateString()) {
   const { user } = useAuth()
   const [tasks, setTasks] = useState<TaskItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const today = todayDateString()
     const q = query(
       collection(db, 'users', user.uid, 'tasks'),
-      where('planDate', '==', today),
+      where('planDate', '==', date),
       orderBy('createdAt', 'asc'),
     )
     return onSnapshot(
@@ -102,17 +102,17 @@ export function useTasks() {
         setLoading(false)
       },
     )
-  }, [user.uid])
+  }, [user.uid, date])
 
-  const addTask = (title: string, sourceInboxItemId: string | null = null) => {
+  const addTask = (title: string, sourceInboxItemId: string | null = null, planDate?: string) => {
     const capitalized = capitalizeFirst(title)
     if (!capitalized) return
-    const today = todayDateString()
+    const resolvedPlanDate = planDate ?? date
     return addDoc(collection(db, 'users', user.uid, 'tasks'), {
       title: capitalized,
       notes: null,
-      planDate: today,
-      originDate: today,
+      planDate: resolvedPlanDate,
+      originDate: resolvedPlanDate,
       status: 'pending' satisfies TaskStatus,
       pushCount: 0,
       sourceInboxItemId,
@@ -149,4 +149,28 @@ export function useTasks() {
   }
 
   return { tasks, loading, error, addTask, completeTask, cancelTask, pushTaskToTomorrow, updateTaskNotes }
+}
+
+const UPCOMING_LIMIT = 30
+
+export function useUpcomingTasks() {
+  const { user } = useAuth()
+  const [tasks, setTasks] = useState<TaskItem[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const q = query(
+      collection(db, 'users', user.uid, 'tasks'),
+      where('status', '==', 'pending' satisfies TaskStatus),
+      where('planDate', '>', todayDateString()),
+      orderBy('planDate', 'asc'),
+      limit(UPCOMING_LIMIT),
+    )
+    return onSnapshot(q, (snapshot) => {
+      setTasks(snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as TaskItem))
+      setLoading(false)
+    })
+  }, [user.uid])
+
+  return { tasks, loading }
 }

@@ -1,13 +1,48 @@
 import { useState, type FormEvent } from 'react'
 import { ActionSheet } from '../../components/ActionSheet'
 import { ErrorBanner } from '../../components/ErrorBanner'
+import { addDays, formatDayLabel, todayDateString } from '../../lib/dates'
 import {
   REPLAN_REASONS,
   useReplanHistory,
   useTasks,
+  useUpcomingTasks,
   type ReplanReason,
   type TaskItem,
 } from './useTasks'
+
+function DayNavigator({
+  date,
+  onChange,
+}: {
+  date: string
+  onChange: (date: string) => void
+}) {
+  return (
+    <div className="flex items-center justify-center gap-4">
+      <button
+        onClick={() => onChange(addDays(date, -1))}
+        aria-label="Dia anterior"
+        className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 active:bg-slate-800"
+      >
+        ‹
+      </button>
+      <button
+        onClick={() => onChange(todayDateString())}
+        className="min-w-28 text-center text-base font-medium text-slate-100 active:text-blue-400"
+      >
+        {formatDayLabel(date)}
+      </button>
+      <button
+        onClick={() => onChange(addDays(date, 1))}
+        aria-label="Próximo dia"
+        className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 active:bg-slate-800"
+      >
+        ›
+      </button>
+    </div>
+  )
+}
 
 function PushTaskPanel({
   task,
@@ -100,9 +135,51 @@ function TaskDetails({ task, onSaveNotes }: { task: TaskItem; onSaveNotes: (note
   )
 }
 
+function UpcomingSection({ onJumpTo }: { onJumpTo: (date: string) => void }) {
+  const { tasks, loading } = useUpcomingTasks()
+  if (loading || tasks.length === 0) return null
+
+  const groups: { date: string; tasks: TaskItem[] }[] = []
+  for (const task of tasks) {
+    const group = groups[groups.length - 1]
+    if (group?.date === task.planDate) group.tasks.push(task)
+    else groups.push({ date: task.planDate, tasks: [task] })
+  }
+
+  return (
+    <div className="mt-4">
+      <p className="text-xs uppercase tracking-wide text-slate-500">Próximos dias</p>
+      <div className="mt-2 flex flex-col gap-3">
+        {groups.map((group) => (
+          <div key={group.date}>
+            <button
+              onClick={() => onJumpTo(group.date)}
+              className="text-xs font-medium text-blue-400 active:text-blue-300"
+            >
+              {formatDayLabel(group.date)}
+            </button>
+            <div className="mt-1 flex flex-col gap-1.5">
+              {group.tasks.map((task) => (
+                <button
+                  key={task.id}
+                  onClick={() => onJumpTo(group.date)}
+                  className="w-full rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-left text-sm text-slate-300 active:bg-slate-800"
+                >
+                  {task.title}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function ReplanView() {
+  const [viewDate, setViewDate] = useState(todayDateString())
   const { tasks, loading, error, addTask, completeTask, cancelTask, pushTaskToTomorrow, updateTaskNotes } =
-    useTasks()
+    useTasks(viewDate)
   const [title, setTitle] = useState('')
   const [pushingTaskId, setPushingTaskId] = useState<string | null>(null)
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null)
@@ -120,10 +197,14 @@ export function ReplanView() {
 
   return (
     <div className="flex h-full flex-col p-4">
-      <h2 className="text-lg font-semibold text-slate-100">Tarefas de hoje</h2>
+      <h2 className="text-lg font-semibold text-slate-100">Tarefas</h2>
       <p className="mt-1 text-sm text-slate-400">
         No fim do dia, toda tarefa pendente precisa de um motivo pra ir pra amanhã.
       </p>
+
+      <div className="mt-3">
+        <DayNavigator date={viewDate} onChange={setViewDate} />
+      </div>
 
       <form onSubmit={onSubmit} className="mt-4 flex gap-2">
         <input
@@ -147,7 +228,7 @@ export function ReplanView() {
       {tasks.length > 0 && (
         <div className="mt-4">
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Progresso de hoje</span>
+            <span>Progresso</span>
             <span>
               {done.length}/{tasks.length}
             </span>
@@ -164,7 +245,7 @@ export function ReplanView() {
       <div className="mt-4 flex flex-1 flex-col gap-2 overflow-y-auto">
         {loading && <p className="text-sm text-slate-500">Carregando...</p>}
         {!loading && tasks.length === 0 && (
-          <p className="text-sm text-slate-500">Nenhuma tarefa hoje ainda.</p>
+          <p className="text-sm text-slate-500">Nenhuma tarefa nesse dia ainda.</p>
         )}
 
         {pending.map((task) =>
@@ -242,6 +323,8 @@ export function ReplanView() {
             </div>
           </div>
         )}
+
+        <UpcomingSection onJumpTo={setViewDate} />
       </div>
 
       {menuTask && (
