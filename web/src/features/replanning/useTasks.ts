@@ -17,6 +17,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../../auth/AuthGate'
 import { db } from '../../firebase'
 import { todayDateString, tomorrowDateString } from '../../lib/dates'
+import { reorderItem, sortByOrder } from '../../lib/reorder'
 import { capitalizeFirst } from '../../lib/text'
 
 export type TaskStatus = 'pending' | 'done'
@@ -45,6 +46,7 @@ export type TaskItem = {
   pushCount: number
   sourceInboxItemId: string | null
   createdAt: Timestamp | null
+  order?: number
 }
 
 export type ReplanHistoryEntry = {
@@ -92,7 +94,7 @@ export function useTasks(date: string = todayDateString()) {
     return onSnapshot(
       q,
       (snapshot) => {
-        setTasks(snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as TaskItem))
+        setTasks(sortByOrder(snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as TaskItem)))
         setLoading(false)
         setError(null)
       },
@@ -148,7 +150,22 @@ export function useTasks(date: string = todayDateString()) {
     return batch.commit()
   }
 
-  return { tasks, loading, error, addTask, completeTask, cancelTask, pushTaskToTomorrow, updateTaskNotes }
+  const movePendingTask = (fromIndex: number, toIndex: number) => {
+    const pendingTasks = tasks.filter((t) => t.status === 'pending')
+    return reorderItem(db, ['users', user.uid, 'tasks'], pendingTasks, fromIndex, toIndex)
+  }
+
+  return {
+    tasks,
+    loading,
+    error,
+    addTask,
+    completeTask,
+    cancelTask,
+    pushTaskToTomorrow,
+    updateTaskNotes,
+    movePendingTask,
+  }
 }
 
 const UPCOMING_LIMIT = 30

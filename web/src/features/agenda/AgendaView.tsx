@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ErrorBanner } from '../../components/ErrorBanner'
+import { DragHandle, SortableList } from '../../components/SortableList'
 import { useRecurringTemplates, type RecurringTemplate } from './useRecurringTemplates'
 import { useScheduleBlocks, type ScheduleBlockType } from './useScheduleBlocks'
 
@@ -187,6 +188,7 @@ export function AgendaView() {
     deleteBlock,
     updateBlock,
     materializeFromTemplates,
+    moveBlock,
   } = useScheduleBlocks()
   const {
     templates,
@@ -194,6 +196,7 @@ export function AgendaView() {
     error: templatesError,
     addTemplate,
     deleteTemplate,
+    moveTemplate,
   } = useRecurringTemplates()
   const materializedRef = useRef(false)
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null)
@@ -218,49 +221,57 @@ export function AgendaView() {
           {!blocksLoading && blocks.length === 0 && (
             <p className="text-sm text-slate-500">Nada na agenda hoje ainda.</p>
           )}
-          {blocks.map((block) =>
-            editingBlockId === block.id ? (
-              <div key={block.id} className="rounded-lg border border-slate-700 bg-slate-900 p-2">
-                <BlockForm
-                  initial={block}
-                  submitLabel="Salvar"
-                  onCancel={() => setEditingBlockId(null)}
-                  onSubmit={(fields) => {
-                    updateBlock(block.id, fields)
-                    setEditingBlockId(null)
-                  }}
-                />
-              </div>
-            ) : (
-              <div
-                key={block.id}
-                className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 ${
-                  block.overlapping ? 'border-amber-600 bg-amber-950/40' : 'border-slate-800 bg-slate-900'
-                }`}
-              >
-                <div>
-                  <span className="text-sm text-slate-400">
-                    {block.startTime}–{block.endTime} · {TYPE_LABELS[block.type]}
-                    {block.overlapping && ' · sobreposto'}
-                  </span>
-                  <p className="text-slate-100">{block.title}</p>
-                </div>
-                <div className="flex shrink-0 gap-2">
-                  <button
-                    onClick={() => setEditingBlockId(block.id)}
-                    className="text-sm text-blue-400 active:text-blue-300"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => deleteBlock(block.id)}
-                    className="text-sm text-slate-500 active:text-slate-300"
-                  >
-                    Remover
-                  </button>
-                </div>
-              </div>
-            ),
+          {blocks.length > 0 && (
+            <SortableList
+              items={blocks}
+              onReorder={moveBlock}
+              rowClassName={(block) =>
+                editingBlockId === block.id
+                  ? 'rounded-lg border border-slate-700 bg-slate-900 p-2'
+                  : `flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 ${
+                      block.overlapping ? 'border-amber-600 bg-amber-950/40' : 'border-slate-800 bg-slate-900'
+                    }`
+              }
+            >
+              {(block, dragHandleProps) =>
+                editingBlockId === block.id ? (
+                  <BlockForm
+                    initial={block}
+                    submitLabel="Salvar"
+                    onCancel={() => setEditingBlockId(null)}
+                    onSubmit={(fields) => {
+                      updateBlock(block.id, fields)
+                      setEditingBlockId(null)
+                    }}
+                  />
+                ) : (
+                  <>
+                    <div>
+                      <span className="text-sm text-slate-400">
+                        {block.startTime}–{block.endTime} · {TYPE_LABELS[block.type]}
+                        {block.overlapping && ' · sobreposto'}
+                      </span>
+                      <p className="text-slate-100">{block.title}</p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <DragHandle dragHandleProps={dragHandleProps} />
+                      <button
+                        onClick={() => setEditingBlockId(block.id)}
+                        className="text-sm text-blue-400 active:text-blue-300"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => deleteBlock(block.id)}
+                        className="text-sm text-slate-500 active:text-slate-300"
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  </>
+                )
+              }
+            </SortableList>
           )}
         </div>
 
@@ -273,26 +284,33 @@ export function AgendaView() {
         <p className="text-xs uppercase tracking-wide text-slate-500">Modelos recorrentes</p>
         <ErrorBanner message={templatesError} />
         <div className="mt-2 flex flex-col gap-2">
-          {!templatesLoading &&
-            templates.map((t: RecurringTemplate) => (
-              <div
-                key={t.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2.5"
-              >
-                <span className="text-slate-300">
-                  {t.startTime}–{t.endTime} · {t.title}{' '}
-                  <span className="text-xs text-slate-500">
-                    ({(t.weekdays ?? WEEKDAYS_MON_FRI).map((d) => WEEKDAY_LABELS[d]).join(', ')})
+          {!templatesLoading && templates.length > 0 && (
+            <SortableList
+              items={templates}
+              onReorder={moveTemplate}
+              rowClassName="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2.5"
+            >
+              {(t: RecurringTemplate, dragHandleProps) => (
+                <>
+                  <span className="text-slate-300">
+                    {t.startTime}–{t.endTime} · {t.title}{' '}
+                    <span className="text-xs text-slate-500">
+                      ({(t.weekdays ?? WEEKDAYS_MON_FRI).map((d) => WEEKDAY_LABELS[d]).join(', ')})
+                    </span>
                   </span>
-                </span>
-                <button
-                  onClick={() => deleteTemplate(t.id)}
-                  className="shrink-0 text-sm text-slate-500 active:text-slate-300"
-                >
-                  Remover
-                </button>
-              </div>
-            ))}
+                  <div className="flex shrink-0 items-center gap-2">
+                    <DragHandle dragHandleProps={dragHandleProps} />
+                    <button
+                      onClick={() => deleteTemplate(t.id)}
+                      className="text-sm text-slate-500 active:text-slate-300"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                </>
+              )}
+            </SortableList>
+          )}
         </div>
         <div className="mt-3">
           <TemplateForm onSubmit={(fields) => addTemplate(fields)} />

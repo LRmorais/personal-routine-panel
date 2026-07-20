@@ -2,6 +2,7 @@ import { addDoc, collection, deleteDoc, doc, onSnapshot } from 'firebase/firesto
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../auth/AuthGate'
 import { db } from '../../firebase'
+import { reorderItem, sortByOrder } from '../../lib/reorder'
 import { capitalizeFirst } from '../../lib/text'
 import type { ScheduleBlockType } from './useScheduleBlocks'
 
@@ -13,6 +14,7 @@ export type RecurringTemplate = {
   type: ScheduleBlockType
   /** 0=domingo .. 6=sábado */
   weekdays: number[]
+  order?: number
 }
 
 export function useRecurringTemplates() {
@@ -25,7 +27,7 @@ export function useRecurringTemplates() {
     return onSnapshot(
       collection(db, 'users', user.uid, 'recurringScheduleTemplates'),
       (snapshot) => {
-        setTemplates(snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as RecurringTemplate))
+        setTemplates(sortByOrder(snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as RecurringTemplate)))
         setLoading(false)
         setError(null)
       },
@@ -46,5 +48,8 @@ export function useRecurringTemplates() {
   const deleteTemplate = (id: string) =>
     deleteDoc(doc(db, 'users', user.uid, 'recurringScheduleTemplates', id))
 
-  return { templates, loading, error, addTemplate, deleteTemplate }
+  const moveTemplate = (fromIndex: number, toIndex: number) =>
+    reorderItem(db, ['users', user.uid, 'recurringScheduleTemplates'], templates, fromIndex, toIndex)
+
+  return { templates, loading, error, addTemplate, deleteTemplate, moveTemplate }
 }

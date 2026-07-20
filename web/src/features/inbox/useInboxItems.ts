@@ -15,6 +15,7 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { db } from '../../firebase'
 import { useAuth } from '../../auth/AuthGate'
+import { reorderItem, sortByOrder } from '../../lib/reorder'
 import { capitalizeFirst } from '../../lib/text'
 
 const RESOLVED_LIMIT = 20
@@ -25,6 +26,7 @@ export type InboxItem = {
   createdAt: Timestamp | null
   status: 'open' | 'snoozed' | 'resolved' | 'converted_to_task'
   resolvedAt: Timestamp | null
+  order?: number
 }
 
 export function useInboxItems() {
@@ -57,7 +59,7 @@ export function useInboxItems() {
             }).finally(() => reactivatingRef.current.delete(item.id))
           }
         }
-        setOpenItems(items)
+        setOpenItems(sortByOrder(items))
         setLoading(false)
         setError(null)
       },
@@ -106,6 +108,9 @@ export function useInboxItems() {
       linkedTaskId: taskId,
     })
 
+  const moveItem = (fromIndex: number, toIndex: number) =>
+    reorderItem(db, ['users', user.uid, 'inboxItems'], openItems, fromIndex, toIndex)
+
   return {
     items: openItems,
     resolvedItems,
@@ -115,5 +120,6 @@ export function useInboxItems() {
     resolveItem,
     discardItem,
     markConvertedToTask,
+    moveItem,
   }
 }

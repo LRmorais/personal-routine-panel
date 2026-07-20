@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../auth/AuthGate'
 import { db } from '../../firebase'
 import { todayDateString, weekdayNumber } from '../../lib/dates'
+import { reorderItem, sortByOrder } from '../../lib/reorder'
 import { capitalizeFirst } from '../../lib/text'
 import type { RecurringTemplate } from './useRecurringTemplates'
 
@@ -15,6 +16,7 @@ export type ScheduleBlock = {
   startTime: string
   endTime: string
   type: ScheduleBlockType
+  order?: number
 }
 
 export type ScheduleBlockWithOverlap = ScheduleBlock & { overlapping: boolean }
@@ -44,7 +46,7 @@ export function useScheduleBlocks() {
   }, [user.uid, today])
 
   const sorted = useMemo(
-    () => [...blocks].sort((a, b) => a.startTime.localeCompare(b.startTime)),
+    () => sortByOrder([...blocks].sort((a, b) => a.startTime.localeCompare(b.startTime))),
     [blocks],
   )
 
@@ -83,6 +85,9 @@ export function useScheduleBlocks() {
       .forEach((t) => addBlock({ title: t.title, startTime: t.startTime, endTime: t.endTime, type: t.type }))
   }
 
+  const moveBlock = (fromIndex: number, toIndex: number) =>
+    reorderItem(db, ['users', user.uid, 'scheduleBlocks'], blocksWithOverlap, fromIndex, toIndex)
+
   return {
     blocks: blocksWithOverlap,
     loading,
@@ -91,5 +96,6 @@ export function useScheduleBlocks() {
     deleteBlock,
     updateBlock,
     materializeFromTemplates,
+    moveBlock,
   }
 }

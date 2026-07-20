@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { ActionSheet } from '../../components/ActionSheet'
 import { ErrorBanner } from '../../components/ErrorBanner'
+import { DragHandle, SortableList } from '../../components/SortableList'
 import { addDays, formatDayLabel, todayDateString } from '../../lib/dates'
 import {
   REPLAN_REASONS,
@@ -178,8 +179,17 @@ function UpcomingSection({ onJumpTo }: { onJumpTo: (date: string) => void }) {
 
 export function ReplanView() {
   const [viewDate, setViewDate] = useState(todayDateString())
-  const { tasks, loading, error, addTask, completeTask, cancelTask, pushTaskToTomorrow, updateTaskNotes } =
-    useTasks(viewDate)
+  const {
+    tasks,
+    loading,
+    error,
+    addTask,
+    completeTask,
+    cancelTask,
+    pushTaskToTomorrow,
+    updateTaskNotes,
+    movePendingTask,
+  } = useTasks(viewDate)
   const [title, setTitle] = useState('')
   const [pushingTaskId, setPushingTaskId] = useState<string | null>(null)
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null)
@@ -248,51 +258,56 @@ export function ReplanView() {
           <p className="text-sm text-slate-500">Nenhuma tarefa nesse dia ainda.</p>
         )}
 
-        {pending.map((task) =>
-          pushingTaskId === task.id ? (
-            <PushTaskPanel
-              key={task.id}
-              task={task}
-              onCancel={() => setPushingTaskId(null)}
-              onConfirm={(reason, note) => {
-                pushTaskToTomorrow(task, reason, note)
-                setPushingTaskId(null)
-              }}
-            />
-          ) : (
-            <div
-              key={task.id}
-              className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2.5"
-            >
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => completeTask(task.id)}
-                  aria-label="Concluir"
-                  className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-600 active:border-green-500"
-                />
-                <button
-                  onClick={() => setExpandedTaskId(expandedTaskId === task.id ? null : task.id)}
-                  className="flex-1 text-left text-slate-100"
-                >
-                  {task.title}
-                  {task.pushCount > 0 && (
-                    <span className="ml-2 text-xs text-amber-400">adiada {task.pushCount}x</span>
-                  )}
-                </button>
-                <button
-                  onClick={() => setMenuTaskId(task.id)}
-                  aria-label="Mais ações"
-                  className="shrink-0 px-1 text-lg leading-none text-slate-500 active:text-slate-300"
-                >
-                  ⋯
-                </button>
-              </div>
-              {expandedTaskId === task.id && (
-                <TaskDetails task={task} onSaveNotes={(notes) => updateTaskNotes(task.id, notes)} />
-              )}
-            </div>
-          ),
-        )}
+        <SortableList
+          items={pending}
+          onReorder={movePendingTask}
+          rowClassName={(task) =>
+            pushingTaskId === task.id ? '' : 'rounded-lg border border-slate-800 bg-slate-900 px-3 py-2.5'
+          }
+        >
+          {(task, dragHandleProps) =>
+            pushingTaskId === task.id ? (
+              <PushTaskPanel
+                task={task}
+                onCancel={() => setPushingTaskId(null)}
+                onConfirm={(reason, note) => {
+                  pushTaskToTomorrow(task, reason, note)
+                  setPushingTaskId(null)
+                }}
+              />
+            ) : (
+              <>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => completeTask(task.id)}
+                    aria-label="Concluir"
+                    className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-600 active:border-green-500"
+                  />
+                  <button
+                    onClick={() => setExpandedTaskId(expandedTaskId === task.id ? null : task.id)}
+                    className="flex-1 text-left text-slate-100"
+                  >
+                    {task.title}
+                    {task.pushCount > 0 && (
+                      <span className="ml-2 text-xs text-amber-400">adiada {task.pushCount}x</span>
+                    )}
+                  </button>
+                  <DragHandle dragHandleProps={dragHandleProps} />
+                  <button
+                    onClick={() => setMenuTaskId(task.id)}
+                    aria-label="Mais ações"
+                    className="shrink-0 px-1 text-lg leading-none text-slate-500 active:text-slate-300"
+                  >
+                    ⋯
+                  </button>
+                </div>
+                {expandedTaskId === task.id && (
+                  <TaskDetails task={task} onSaveNotes={(notes) => updateTaskNotes(task.id, notes)} />
+                )}
+              </>
+            )
+          }
+        </SortableList>
 
         {done.length > 0 && (
           <div className="mt-4">

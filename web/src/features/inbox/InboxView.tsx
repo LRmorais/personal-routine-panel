@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { ActionSheet } from '../../components/ActionSheet'
 import { ErrorBanner } from '../../components/ErrorBanner'
+import { DragHandle, SortableList } from '../../components/SortableList'
 import { formatDateTime, todayDateString } from '../../lib/dates'
 import { useTasks } from '../replanning/useTasks'
 import { useInboxItems, type InboxItem } from './useInboxItems'
@@ -41,8 +42,17 @@ function formatCreatedAt(item: InboxItem) {
 }
 
 export function InboxView() {
-  const { items, resolvedItems, loading, error, addItem, resolveItem, discardItem, markConvertedToTask } =
-    useInboxItems()
+  const {
+    items,
+    resolvedItems,
+    loading,
+    error,
+    addItem,
+    resolveItem,
+    discardItem,
+    markConvertedToTask,
+    moveItem,
+  } = useInboxItems()
   const { addTask } = useTasks()
   const [text, setText] = useState('')
   const [schedulingId, setSchedulingId] = useState<string | null>(null)
@@ -85,53 +95,58 @@ export function InboxView() {
 
       <ErrorBanner message={error} />
 
-      <ul className="mt-6 flex flex-1 flex-col gap-2 overflow-y-auto">
-        {loading && <li className="text-sm text-slate-500">Carregando...</li>}
+      <div className="mt-6 flex flex-1 flex-col gap-2 overflow-y-auto">
+        {loading && <p className="text-sm text-slate-500">Carregando...</p>}
         {!loading && items.length === 0 && (
-          <li className="text-sm text-slate-500">Nada pendente por aqui.</li>
+          <p className="text-sm text-slate-500">Nada pendente por aqui.</p>
         )}
-        {items.map((item) => (
-          <li
-            key={item.id}
-            className="flex flex-col gap-2 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2.5"
-          >
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => resolveItem(item.id)}
-                aria-label="Resolver"
-                className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-600 active:border-green-500"
-              />
-              <div className="flex-1">
-                <p className="text-slate-100">{item.text}</p>
-                <p className="text-xs text-slate-600">{formatCreatedAt(item)}</p>
+
+        <SortableList
+          items={items}
+          onReorder={moveItem}
+          rowClassName="flex flex-col gap-2 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2.5"
+        >
+          {(item, dragHandleProps) => (
+            <>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => resolveItem(item.id)}
+                  aria-label="Resolver"
+                  className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-600 active:border-green-500"
+                />
+                <div className="flex-1">
+                  <p className="text-slate-100">{item.text}</p>
+                  <p className="text-xs text-slate-600">{formatCreatedAt(item)}</p>
+                </div>
+                <DragHandle dragHandleProps={dragHandleProps} />
+                <button
+                  onClick={() => setMenuItemId(item.id)}
+                  aria-label="Mais ações"
+                  className="shrink-0 px-1 text-lg leading-none text-slate-500 active:text-slate-300"
+                >
+                  ⋯
+                </button>
               </div>
-              <button
-                onClick={() => setMenuItemId(item.id)}
-                aria-label="Mais ações"
-                className="shrink-0 px-1 text-lg leading-none text-slate-500 active:text-slate-300"
-              >
-                ⋯
-              </button>
-            </div>
-            {schedulingId === item.id && (
-              <SchedulePicker
-                onPick={(date) => {
-                  scheduleAsTask(item, date)
-                  setSchedulingId(null)
-                }}
-                onCancel={() => setSchedulingId(null)}
-              />
-            )}
-          </li>
-        ))}
+              {schedulingId === item.id && (
+                <SchedulePicker
+                  onPick={(date) => {
+                    scheduleAsTask(item, date)
+                    setSchedulingId(null)
+                  }}
+                  onCancel={() => setSchedulingId(null)}
+                />
+              )}
+            </>
+          )}
+        </SortableList>
 
         {resolvedItems.length > 0 && (
           <>
-            <li className="mt-4 text-xs uppercase tracking-wide text-slate-500">
+            <p className="mt-4 text-xs uppercase tracking-wide text-slate-500">
               Resolvidos · {resolvedItems.length}
-            </li>
+            </p>
             {resolvedItems.map((item) => (
-              <li
+              <div
                 key={item.id}
                 className="flex animate-[task-complete-pop_0.35s_ease-out] items-center gap-2.5 rounded-lg border border-green-900 bg-green-950/30 px-3 py-2.5"
               >
@@ -149,11 +164,11 @@ export function InboxView() {
                 >
                   ⋯
                 </button>
-              </li>
+              </div>
             ))}
           </>
         )}
-      </ul>
+      </div>
 
       {menuItem && (
         <ActionSheet
