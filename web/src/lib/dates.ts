@@ -26,6 +26,31 @@ export function weekdayNumber(dateString: string): number {
   return new Date(`${dateString}T12:00:00Z`).getUTCDay()
 }
 
+/** Monday of the week (Monday-first) containing `dateString`. */
+export function startOfWeek(dateString: string): string {
+  const weekday = weekdayNumber(dateString)
+  const offsetToMonday = weekday === 0 ? -6 : 1 - weekday
+  return addDays(dateString, offsetToMonday)
+}
+
+const SHORT_WEEKDAY_FORMAT = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: TIME_ZONE,
+  weekday: 'short',
+})
+
+export function shortWeekdayLabel(dateString: string): string {
+  return SHORT_WEEKDAY_FORMAT.format(new Date(`${dateString}T12:00:00Z`)).replace('.', '').toUpperCase()
+}
+
+const DAY_NUMBER_FORMAT = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: TIME_ZONE,
+  day: '2-digit',
+})
+
+export function dayNumberLabel(dateString: string): string {
+  return DAY_NUMBER_FORMAT.format(new Date(`${dateString}T12:00:00Z`))
+}
+
 const DATE_TIME_FORMAT = new Intl.DateTimeFormat('pt-BR', {
   timeZone: TIME_ZONE,
   day: '2-digit',

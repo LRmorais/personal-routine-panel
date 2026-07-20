@@ -125,6 +125,12 @@ export function useTasks(date: string = todayDateString()) {
   const updateTaskNotes = (id: string, notes: string) =>
     updateDoc(doc(db, 'users', user.uid, 'tasks', id), { notes: capitalizeFirst(notes) || null })
 
+  const updateTaskTitle = (id: string, title: string) => {
+    const capitalized = capitalizeFirst(title)
+    if (!capitalized) return
+    return updateDoc(doc(db, 'users', user.uid, 'tasks', id), { title: capitalized })
+  }
+
   const completeTask = (id: string) =>
     updateDoc(doc(db, 'users', user.uid, 'tasks', id), {
       status: 'done' satisfies TaskStatus,
@@ -164,6 +170,7 @@ export function useTasks(date: string = todayDateString()) {
     cancelTask,
     pushTaskToTomorrow,
     updateTaskNotes,
+    updateTaskTitle,
     movePendingTask,
   }
 }
