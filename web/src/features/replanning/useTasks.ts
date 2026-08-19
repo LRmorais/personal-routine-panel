@@ -20,7 +20,7 @@ import { todayDateString, tomorrowDateString } from '../../lib/dates'
 import { reorderItem, sortByOrder } from '../../lib/reorder'
 import { capitalizeFirst } from '../../lib/text'
 
-export type TaskStatus = 'pending' | 'done'
+export type TaskStatus = 'pending' | 'in_progress' | 'done' | 'not_done'
 
 export type ReplanReason =
   | 'ran_out_of_time'
@@ -47,6 +47,7 @@ export type TaskItem = {
   sourceInboxItemId: string | null
   createdAt: Timestamp | null
   order?: number
+  durationHours?: number | null
 }
 
 export type ReplanHistoryEntry = {
@@ -110,6 +111,15 @@ export function useTasks(date: string = todayDateString()) {
     const capitalized = capitalizeFirst(title)
     if (!capitalized) return
     const resolvedPlanDate = planDate ?? date
+    // New tasks land at the top of their day's queue, regardless of any manual
+    // reordering already done: pick an order below the current minimum. Only
+    // meaningful when adding to the day this hook already has loaded — for a
+    // different day, we don't have its task list to compute against.
+    const orders =
+      resolvedPlanDate === date
+        ? tasks.map((t) => t.order).filter((o): o is number => typeof o === 'number')
+        : []
+    const order = orders.length ? Math.min(...orders) - 1 : 0
     return addDoc(collection(db, 'users', user.uid, 'tasks'), {
       title: capitalized,
       notes: null,
@@ -118,6 +128,7 @@ export function useTasks(date: string = todayDateString()) {
       status: 'pending' satisfies TaskStatus,
       pushCount: 0,
       sourceInboxItemId,
+      ...(resolvedPlanDate === date ? { order } : {}),
       createdAt: serverTimestamp(),
     })
   }
@@ -131,13 +142,46 @@ export function useTasks(date: string = todayDateString()) {
     return updateDoc(doc(db, 'users', user.uid, 'tasks', id), { title: capitalized })
   }
 
+  const updateTaskDuration = (id: string, hours: number | null) =>
+    updateDoc(doc(db, 'users', user.uid, 'tasks', id), {
+      durationHours: hours !== null && Number.isFinite(hours) && hours >= 0 ? hours : null,
+    })
+
   const completeTask = (id: string) =>
     updateDoc(doc(db, 'users', user.uid, 'tasks', id), {
       status: 'done' satisfies TaskStatus,
       doneAt: serverTimestamp(),
     })
 
+  const startTask = (id: string) =>
+    updateDoc(doc(db, 'users', user.uid, 'tasks', id), {
+      status: 'in_progress' satisfies TaskStatus,
+    })
+
+  const pauseTask = (id: string) =>
+    updateDoc(doc(db, 'users', user.uid, 'tasks', id), {
+      status: 'pending' satisfies TaskStatus,
+    })
+
+  const markNotDone = (id: string) =>
+    updateDoc(doc(db, 'users', user.uid, 'tasks', id), {
+      status: 'not_done' satisfies TaskStatus,
+    })
+
   const cancelTask = (id: string) => deleteDoc(doc(db, 'users', user.uid, 'tasks', id))
+
+  const duplicateTask = (task: TaskItem, toDate: string) => {
+    return addDoc(collection(db, 'users', user.uid, 'tasks'), {
+      title: task.title,
+      notes: task.notes,
+      planDate: toDate,
+      originDate: toDate,
+      status: 'pending' satisfies TaskStatus,
+      pushCount: 0,
+      sourceInboxItemId: null,
+      createdAt: serverTimestamp(),
+    })
+  }
 
   const pushTaskToTomorrow = (task: TaskItem, reason: ReplanReason, reasonNote: string) => {
     const toDate = tomorrowDateString(task.planDate)
@@ -157,8 +201,8 @@ export function useTasks(date: string = todayDateString()) {
   }
 
   const movePendingTask = (fromIndex: number, toIndex: number) => {
-    const pendingTasks = tasks.filter((t) => t.status === 'pending')
-    return reorderItem(db, ['users', user.uid, 'tasks'], pendingTasks, fromIndex, toIndex)
+    const activeTasks = tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress')
+    return reorderItem(db, ['users', user.uid, 'tasks'], activeTasks, fromIndex, toIndex)
   }
 
   return {
@@ -167,10 +211,15 @@ export function useTasks(date: string = todayDateString()) {
     error,
     addTask,
     completeTask,
+    startTask,
+    pauseTask,
+    markNotDone,
     cancelTask,
     pushTaskToTomorrow,
+    duplicateTask,
     updateTaskNotes,
     updateTaskTitle,
+    updateTaskDuration,
     movePendingTask,
   }
 }
@@ -185,7 +234,7 @@ export function useUpcomingTasks() {
   useEffect(() => {
     const q = query(
       collection(db, 'users', user.uid, 'tasks'),
-      where('status', '==', 'pending' satisfies TaskStatus),
+      where('status', 'in', ['pending', 'in_progress'] satisfies TaskStatus[]),
       where('planDate', '>', todayDateString()),
       orderBy('planDate', 'asc'),
       limit(UPCOMING_LIMIT),

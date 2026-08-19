@@ -86,10 +86,15 @@ export function useInboxItems() {
   const addItem = (text: string) => {
     const capitalized = capitalizeFirst(text)
     if (!capitalized) return
+    // New items always land at the top, regardless of any manual reordering
+    // already done: pick an order below the current minimum.
+    const orders = openItems.map((i) => i.order).filter((o): o is number => typeof o === 'number')
+    const order = orders.length ? Math.min(...orders) - 1 : 0
     return addDoc(collection(db, 'users', user.uid, 'inboxItems'), {
       text: capitalized,
       status: 'open',
       source: 'web',
+      order,
       createdAt: serverTimestamp(),
     })
   }

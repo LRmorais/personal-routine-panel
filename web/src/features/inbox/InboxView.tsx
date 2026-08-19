@@ -57,8 +57,14 @@ export function InboxView() {
   const [text, setText] = useState('')
   const [schedulingId, setSchedulingId] = useState<string | null>(null)
   const [menuItemId, setMenuItemId] = useState<string | null>(null)
+  const [sortMode, setSortMode] = useState<'manual' | 'date'>('manual')
   const menuItem = items.find((i) => i.id === menuItemId) ?? null
   const resolvedMenuItem = resolvedItems.find((i) => i.id === menuItemId) ?? null
+
+  const displayItems =
+    sortMode === 'date'
+      ? [...items].sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0))
+      : items
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -95,14 +101,35 @@ export function InboxView() {
 
       <ErrorBanner message={error} />
 
-      <div className="mt-6 flex flex-1 flex-col gap-2 overflow-y-auto">
+      {items.length > 1 && (
+        <div className="mt-4 flex justify-center gap-1 rounded-lg bg-slate-900 p-1">
+          <button
+            onClick={() => setSortMode('manual')}
+            className={`flex-1 rounded-md py-1.5 text-sm font-medium ${
+              sortMode === 'manual' ? 'bg-slate-800 text-slate-100' : 'text-slate-500'
+            }`}
+          >
+            Minha ordem
+          </button>
+          <button
+            onClick={() => setSortMode('date')}
+            className={`flex-1 rounded-md py-1.5 text-sm font-medium ${
+              sortMode === 'date' ? 'bg-slate-800 text-slate-100' : 'text-slate-500'
+            }`}
+          >
+            Data e hora
+          </button>
+        </div>
+      )}
+
+      <div className="mt-4 flex flex-1 flex-col gap-2 overflow-y-auto">
         {loading && <p className="text-sm text-slate-500">Carregando...</p>}
         {!loading && items.length === 0 && (
           <p className="text-sm text-slate-500">Nada pendente por aqui.</p>
         )}
 
         <SortableList
-          items={items}
+          items={displayItems}
           onReorder={moveItem}
           rowClassName="flex flex-col gap-2 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2.5"
         >
@@ -118,7 +145,7 @@ export function InboxView() {
                   <p className="text-slate-100">{item.text}</p>
                   <p className="text-xs text-slate-600">{formatCreatedAt(item)}</p>
                 </div>
-                <DragHandle dragHandleProps={dragHandleProps} />
+                {sortMode === 'manual' && <DragHandle dragHandleProps={dragHandleProps} />}
                 <button
                   onClick={() => setMenuItemId(item.id)}
                   aria-label="Mais ações"
