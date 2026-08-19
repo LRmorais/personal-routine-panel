@@ -1,3 +1,5 @@
+import { capitalizeFirst } from './text'
+
 const TIME_ZONE = 'America/Sao_Paulo'
 
 function dateStringFor(date: Date): string {
@@ -33,6 +35,33 @@ export function startOfWeek(dateString: string): string {
   return addDays(dateString, offsetToMonday)
 }
 
+export function endOfWeek(dateString: string): string {
+  return addDays(startOfWeek(dateString), 6)
+}
+
+/** First day (the 1st) of the month containing `dateString`. */
+export function startOfMonth(dateString: string): string {
+  const [year, month] = dateString.split('-').map(Number)
+  return dateStringFor(new Date(Date.UTC(year, month - 1, 1, 12)))
+}
+
+/** Last day of the month containing `dateString`. */
+export function endOfMonth(dateString: string): string {
+  const [year, month] = dateString.split('-').map(Number)
+  // day 0 of next month = last day of this month
+  return dateStringFor(new Date(Date.UTC(year, month, 0, 12)))
+}
+
+/**
+ * Adds `delta` months to a month-start anchor (the 1st of a month).
+ * Only valid for day-1 inputs — avoids end-of-month rollover ambiguity
+ * (e.g. "Jan 31 + 1 month").
+ */
+export function addMonths(monthStart: string, delta: number): string {
+  const [year, month] = monthStart.split('-').map(Number)
+  return dateStringFor(new Date(Date.UTC(year, month - 1 + delta, 1, 12)))
+}
+
 const SHORT_WEEKDAY_FORMAT = new Intl.DateTimeFormat('pt-BR', {
   timeZone: TIME_ZONE,
   weekday: 'short',
@@ -49,6 +78,34 @@ const DAY_NUMBER_FORMAT = new Intl.DateTimeFormat('pt-BR', {
 
 export function dayNumberLabel(dateString: string): string {
   return DAY_NUMBER_FORMAT.format(new Date(`${dateString}T12:00:00Z`))
+}
+
+const SHORT_MONTH_FORMAT = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: TIME_ZONE,
+  month: 'short',
+})
+
+function shortMonthLabel(dateString: string): string {
+  return SHORT_MONTH_FORMAT.format(new Date(`${dateString}T12:00:00Z`)).replace('.', '')
+}
+
+/** e.g. "11–17 ago" (same month) or "29 jul–4 ago" (spanning months). */
+export function formatWeekRangeLabel(start: string, end: string): string {
+  const startMonth = shortMonthLabel(start)
+  const endMonth = shortMonthLabel(end)
+  if (startMonth === endMonth) return `${dayNumberLabel(start)}–${dayNumberLabel(end)} ${endMonth}`
+  return `${dayNumberLabel(start)} ${startMonth}–${dayNumberLabel(end)} ${endMonth}`
+}
+
+const MONTH_YEAR_FORMAT = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: TIME_ZONE,
+  month: 'long',
+  year: 'numeric',
+})
+
+/** e.g. "Agosto de 2026" for a month-start anchor (the 1st of a month). */
+export function formatMonthLabel(monthStart: string): string {
+  return capitalizeFirst(MONTH_YEAR_FORMAT.format(new Date(`${monthStart}T12:00:00Z`)))
 }
 
 const DATE_TIME_FORMAT = new Intl.DateTimeFormat('pt-BR', {

@@ -12,12 +12,16 @@ const HabitsView = lazy(() =>
 const AgendaView = lazy(() =>
   import('./features/agenda/AgendaView').then((m) => ({ default: m.AgendaView })),
 )
+const ReportsView = lazy(() =>
+  import('./features/reports/ReportsView').then((m) => ({ default: m.ReportsView })),
+)
 
 const TABS = [
   { key: 'inbox', label: 'Inbox', view: InboxView },
   { key: 'replan', label: 'Tarefas', view: ReplanView },
   { key: 'habits', label: 'Hábitos', view: HabitsView },
   { key: 'agenda', label: 'Agenda', view: AgendaView },
+  { key: 'reports', label: 'Relatórios', view: ReportsView },
 ] as const
 
 type TabKey = (typeof TABS)[number]['key']

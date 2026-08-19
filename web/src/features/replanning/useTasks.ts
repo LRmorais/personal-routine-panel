@@ -59,6 +59,12 @@ export type ReplanHistoryEntry = {
   decidedAt: Timestamp | null
 }
 
+export function writeTaskDuration(uid: string, id: string, hours: number | null) {
+  return updateDoc(doc(db, 'users', uid, 'tasks', id), {
+    durationHours: hours !== null && Number.isFinite(hours) && hours >= 0 ? hours : null,
+  })
+}
+
 export function useReplanHistory(taskId: string | null) {
   const { user } = useAuth()
   const [history, setHistory] = useState<ReplanHistoryEntry[]>([])
@@ -142,10 +148,7 @@ export function useTasks(date: string = todayDateString()) {
     return updateDoc(doc(db, 'users', user.uid, 'tasks', id), { title: capitalized })
   }
 
-  const updateTaskDuration = (id: string, hours: number | null) =>
-    updateDoc(doc(db, 'users', user.uid, 'tasks', id), {
-      durationHours: hours !== null && Number.isFinite(hours) && hours >= 0 ? hours : null,
-    })
+  const updateTaskDuration = (id: string, hours: number | null) => writeTaskDuration(user.uid, id, hours)
 
   const completeTask = (id: string) =>
     updateDoc(doc(db, 'users', user.uid, 'tasks', id), {
