@@ -93,6 +93,43 @@ function DuplicateTaskPanel({
   )
 }
 
+function BulkDuplicatePanel({
+  count,
+  onCancel,
+  onConfirm,
+}: {
+  count: number
+  onCancel: () => void
+  onConfirm: (toDate: string) => void
+}) {
+  const [date, setDate] = useState(tomorrowDateString())
+
+  return (
+    <div className="mt-2 rounded-lg border border-purple-800 bg-purple-950/30 p-3">
+      <p className="text-sm text-slate-200">
+        Duplicar {count} tarefa{count === 1 ? '' : 's'} selecionada{count === 1 ? '' : 's'} para qual dia?
+      </p>
+      <div className="mt-2 flex items-center gap-2">
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm text-slate-100"
+        />
+        <button
+          onClick={() => onConfirm(date)}
+          className="shrink-0 rounded-lg bg-purple-600 px-3 py-1.5 text-sm font-medium text-white active:bg-purple-700"
+        >
+          Duplicar
+        </button>
+      </div>
+      <button onClick={onCancel} className="mt-2 text-sm text-slate-400 active:text-slate-200">
+        Cancelar
+      </button>
+    </div>
+  )
+}
+
 function DurationPanel({
   task,
   onCancel,
@@ -136,28 +173,46 @@ function DurationPanel({
 function ClosedTaskRow({
   task,
   variant,
+  selectionMode,
+  selected,
+  onToggleSelect,
   onOpenMenu,
 }: {
   task: TaskItem
   variant: 'done' | 'not_done'
+  selectionMode: boolean
+  selected: boolean
+  onToggleSelect: () => void
   onOpenMenu: () => void
 }) {
   const isDone = variant === 'done'
   return (
     <div
-      className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 ${
+      onClick={selectionMode ? onToggleSelect : undefined}
+      className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 ${selectionMode ? 'cursor-pointer' : ''} ${
         isDone
           ? 'animate-[task-complete-pop_0.35s_ease-out] border-green-900 bg-green-950/30'
           : 'border-red-900/60 bg-red-950/10'
       }`}
     >
-      <span
-        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs text-white ${
-          isDone ? 'bg-green-600' : 'bg-red-900'
-        }`}
-      >
-        {isDone ? '✓' : '✕'}
-      </span>
+      {selectionMode ? (
+        <span
+          aria-label="Selecionar"
+          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 text-xs text-white ${
+            selected ? 'border-purple-500 bg-purple-500' : 'border-slate-600'
+          }`}
+        >
+          {selected && '✓'}
+        </span>
+      ) : (
+        <span
+          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs text-white ${
+            isDone ? 'bg-green-600' : 'bg-red-900'
+          }`}
+        >
+          {isDone ? '✓' : '✕'}
+        </span>
+      )}
       <span
         className={`min-w-0 flex-1 truncate line-through ${
           isDone ? 'text-slate-400 decoration-green-700' : 'text-slate-500 decoration-red-800'
@@ -168,13 +223,15 @@ function ClosedTaskRow({
           <span className="ml-2 text-xs no-underline text-slate-600">⏱ {task.durationHours}h</span>
         )}
       </span>
-      <button
-        onClick={onOpenMenu}
-        aria-label="Mais ações"
-        className="shrink-0 px-1 text-lg leading-none text-slate-500 active:text-slate-300"
-      >
-        ⋯
-      </button>
+      {!selectionMode && (
+        <button
+          onClick={onOpenMenu}
+          aria-label="Mais ações"
+          className="shrink-0 px-1 text-lg leading-none text-slate-500 active:text-slate-300"
+        >
+          ⋯
+        </button>
+      )}
     </div>
   )
 }
@@ -298,8 +355,10 @@ export function DayColumn({
     pauseTask,
     markNotDone,
     cancelTask,
+    cancelTasks,
     pushTaskToTomorrow,
     duplicateTask,
+    duplicateTasks,
     updateTaskNotes,
     updateTaskTitle,
     updateTaskDuration,
@@ -312,6 +371,9 @@ export function DayColumn({
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null)
   const [menuTaskId, setMenuTaskId] = useState<string | null>(null)
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkDuplicating, setBulkDuplicating] = useState(false)
   const menuTask = tasks.find((t) => t.id === menuTaskId) ?? null
 
   const onSubmit = (e: FormEvent) => {
@@ -328,6 +390,46 @@ export function DayColumn({
   const onSaveDuration = (taskId: string, hours: number | null) => {
     updateTaskDuration(taskId, hours)
     setDurationTaskId(null)
+  }
+
+  const enterSelectionMode = () => {
+    setPushingTaskId(null)
+    setDuplicatingTaskId(null)
+    setDurationTaskId(null)
+    setEditingTaskId(null)
+    setExpandedTaskId(null)
+    setMenuTaskId(null)
+    setSelectionMode(true)
+  }
+
+  const exitSelectionMode = () => {
+    setSelectionMode(false)
+    setSelectedIds(new Set())
+    setBulkDuplicating(false)
+  }
+
+  const toggleSelected = (id: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
+  const allSelected = tasks.length > 0 && selectedIds.size === tasks.length
+  const toggleSelectAll = () => setSelectedIds(allSelected ? new Set() : new Set(tasks.map((t) => t.id)))
+
+  const onBulkDelete = () => {
+    cancelTasks(Array.from(selectedIds))
+    exitSelectionMode()
+  }
+
+  const onBulkDuplicate = (toDate: string) => {
+    duplicateTasks(
+      tasks.filter((t) => selectedIds.has(t.id)),
+      toDate,
+    )
+    exitSelectionMode()
   }
 
   const pending = tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress')
@@ -372,6 +474,61 @@ export function DayColumn({
             />
           </div>
         </div>
+      )}
+
+      {tasks.length > 0 && (
+        <div className="mt-3 flex items-center gap-2">
+          {selectionMode ? (
+            <>
+              <button onClick={toggleSelectAll} className="flex items-center gap-1.5">
+                <span
+                  aria-label="Selecionar todas"
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 text-xs text-white ${
+                    allSelected ? 'border-purple-500 bg-purple-500' : 'border-slate-600'
+                  }`}
+                >
+                  {allSelected && '✓'}
+                </span>
+                <span className="text-xs text-slate-400">Todos</span>
+              </button>
+              <span className="text-xs text-slate-400">{selectedIds.size} selecionada(s)</span>
+              <div className="ml-auto flex items-center gap-2">
+                <button
+                  onClick={() => setBulkDuplicating(true)}
+                  disabled={selectedIds.size === 0}
+                  className="rounded-lg bg-purple-600 px-2.5 py-1 text-xs font-medium text-white active:bg-purple-700 disabled:opacity-40"
+                >
+                  Duplicar
+                </button>
+                <button
+                  onClick={onBulkDelete}
+                  disabled={selectedIds.size === 0}
+                  className="rounded-lg bg-red-950 px-2.5 py-1 text-xs font-medium text-red-300 active:bg-red-900 disabled:opacity-40"
+                >
+                  Excluir
+                </button>
+                <button onClick={exitSelectionMode} className="text-xs text-slate-400 active:text-slate-200">
+                  Cancelar
+                </button>
+              </div>
+            </>
+          ) : (
+            <button
+              onClick={enterSelectionMode}
+              className="ml-auto text-xs text-slate-400 active:text-slate-200"
+            >
+              Selecionar
+            </button>
+          )}
+        </div>
+      )}
+
+      {bulkDuplicating && (
+        <BulkDuplicatePanel
+          count={selectedIds.size}
+          onCancel={() => setBulkDuplicating(false)}
+          onConfirm={onBulkDuplicate}
+        />
       )}
 
       <div
@@ -425,15 +582,31 @@ export function DayColumn({
             ) : (
               <>
                 <div className="flex items-center gap-3">
+                  {selectionMode ? (
+                    <button
+                      onClick={() => toggleSelected(task.id)}
+                      aria-label="Selecionar"
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 text-xs text-white ${
+                        selectedIds.has(task.id) ? 'border-purple-500 bg-purple-500' : 'border-slate-600'
+                      }`}
+                    >
+                      {selectedIds.has(task.id) && '✓'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => completeTask(task.id)}
+                      aria-label="Concluir"
+                      className={`h-5 w-5 shrink-0 rounded-full border-2 active:border-green-500 ${
+                        task.status === 'in_progress' ? 'border-blue-500 bg-blue-500/30' : 'border-slate-600'
+                      }`}
+                    />
+                  )}
                   <button
-                    onClick={() => completeTask(task.id)}
-                    aria-label="Concluir"
-                    className={`h-5 w-5 shrink-0 rounded-full border-2 active:border-green-500 ${
-                      task.status === 'in_progress' ? 'border-blue-500 bg-blue-500/30' : 'border-slate-600'
-                    }`}
-                  />
-                  <button
-                    onClick={() => setExpandedTaskId(expandedTaskId === task.id ? null : task.id)}
+                    onClick={() =>
+                      selectionMode
+                        ? toggleSelected(task.id)
+                        : setExpandedTaskId(expandedTaskId === task.id ? null : task.id)
+                    }
                     className="min-w-0 flex-1 text-left text-slate-100"
                   >
                     <span className="truncate">{task.title}</span>
@@ -447,16 +620,20 @@ export function DayColumn({
                       <span className="ml-2 text-xs text-slate-500">⏱ {task.durationHours}h</span>
                     )}
                   </button>
-                  <DragHandle dragHandleProps={dragHandleProps} />
-                  <button
-                    onClick={() => setMenuTaskId(task.id)}
-                    aria-label="Mais ações"
-                    className="shrink-0 px-1 text-lg leading-none text-slate-500 active:text-slate-300"
-                  >
-                    ⋯
-                  </button>
+                  {!selectionMode && (
+                    <>
+                      <DragHandle dragHandleProps={dragHandleProps} />
+                      <button
+                        onClick={() => setMenuTaskId(task.id)}
+                        aria-label="Mais ações"
+                        className="shrink-0 px-1 text-lg leading-none text-slate-500 active:text-slate-300"
+                      >
+                        ⋯
+                      </button>
+                    </>
+                  )}
                 </div>
-                {expandedTaskId === task.id && (
+                {!selectionMode && expandedTaskId === task.id && (
                   <TaskDetails
                     task={task}
                     onSaveNotes={(notes) => updateTaskNotes(task.id, notes)}
@@ -504,6 +681,9 @@ export function DayColumn({
                     key={task.id}
                     task={task}
                     variant="done"
+                    selectionMode={selectionMode}
+                    selected={selectedIds.has(task.id)}
+                    onToggleSelect={() => toggleSelected(task.id)}
                     onOpenMenu={() => setMenuTaskId(task.id)}
                   />
                 ),
@@ -548,6 +728,9 @@ export function DayColumn({
                     key={task.id}
                     task={task}
                     variant="not_done"
+                    selectionMode={selectionMode}
+                    selected={selectedIds.has(task.id)}
+                    onToggleSelect={() => toggleSelected(task.id)}
                     onOpenMenu={() => setMenuTaskId(task.id)}
                   />
                 ),

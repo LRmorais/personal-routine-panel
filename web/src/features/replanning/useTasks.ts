@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDocs,
   limit,
   onSnapshot,
   orderBy,
@@ -173,18 +174,45 @@ export function useTasks(date: string = todayDateString()) {
 
   const cancelTask = (id: string) => deleteDoc(doc(db, 'users', user.uid, 'tasks', id))
 
-  const duplicateTask = (task: TaskItem, toDate: string) => {
-    return addDoc(collection(db, 'users', user.uid, 'tasks'), {
-      title: task.title,
-      notes: task.notes,
-      planDate: toDate,
-      originDate: toDate,
-      status: 'pending' satisfies TaskStatus,
-      pushCount: 0,
-      sourceInboxItemId: null,
-      createdAt: serverTimestamp(),
-    })
+  const cancelTasks = (ids: string[]) => {
+    if (ids.length === 0) return
+    const batch = writeBatch(db)
+    ids.forEach((id) => batch.delete(doc(db, 'users', user.uid, 'tasks', id)))
+    return batch.commit()
   }
+
+  const duplicateTasks = async (tasksToDuplicate: TaskItem[], toDate: string) => {
+    if (tasksToDuplicate.length === 0) return
+    // The duplicates always land at the top of the destination day's queue,
+    // in the order they were selected. That day's tasks aren't necessarily
+    // loaded in this hook, so fetch its current orders directly.
+    const destinationSnapshot = await getDocs(
+      query(collection(db, 'users', user.uid, 'tasks'), where('planDate', '==', toDate)),
+    )
+    const orders = destinationSnapshot.docs
+      .map((d) => d.data().order)
+      .filter((o): o is number => typeof o === 'number')
+    const existingMin = orders.length ? Math.min(...orders) : 0
+    const baseOrder = existingMin - tasksToDuplicate.length
+
+    const batch = writeBatch(db)
+    tasksToDuplicate.forEach((task, i) => {
+      batch.set(doc(collection(db, 'users', user.uid, 'tasks')), {
+        title: task.title,
+        notes: task.notes,
+        planDate: toDate,
+        originDate: toDate,
+        status: 'pending' satisfies TaskStatus,
+        pushCount: 0,
+        sourceInboxItemId: null,
+        order: baseOrder + i,
+        createdAt: serverTimestamp(),
+      })
+    })
+    return batch.commit()
+  }
+
+  const duplicateTask = (task: TaskItem, toDate: string) => duplicateTasks([task], toDate)
 
   const pushTaskToTomorrow = (task: TaskItem, reason: ReplanReason, reasonNote: string) => {
     const toDate = tomorrowDateString(task.planDate)
@@ -218,8 +246,10 @@ export function useTasks(date: string = todayDateString()) {
     pauseTask,
     markNotDone,
     cancelTask,
+    cancelTasks,
     pushTaskToTomorrow,
     duplicateTask,
+    duplicateTasks,
     updateTaskNotes,
     updateTaskTitle,
     updateTaskDuration,
@@ -229,7 +259,7 @@ export function useTasks(date: string = todayDateString()) {
 
 const UPCOMING_LIMIT = 30
 
-export function useUpcomingTasks() {
+export function useUpcomingTasks(afterDate: string = todayDateString()) {
   const { user } = useAuth()
   const [tasks, setTasks] = useState<TaskItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -238,7 +268,7 @@ export function useUpcomingTasks() {
     const q = query(
       collection(db, 'users', user.uid, 'tasks'),
       where('status', 'in', ['pending', 'in_progress'] satisfies TaskStatus[]),
-      where('planDate', '>', todayDateString()),
+      where('planDate', '>', afterDate),
       orderBy('planDate', 'asc'),
       limit(UPCOMING_LIMIT),
     )
@@ -246,7 +276,7 @@ export function useUpcomingTasks() {
       setTasks(snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as TaskItem))
       setLoading(false)
     })
-  }, [user.uid])
+  }, [user.uid, afterDate])
 
   return { tasks, loading }
 }

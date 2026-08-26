@@ -37,8 +37,14 @@ function DayNavigator({
   )
 }
 
-function UpcomingSection({ onJumpTo }: { onJumpTo: (date: string) => void }) {
-  const { tasks, loading } = useUpcomingTasks()
+function UpcomingSection({
+  afterDate,
+  onJumpTo,
+}: {
+  afterDate: string
+  onJumpTo: (date: string) => void
+}) {
+  const { tasks, loading } = useUpcomingTasks(afterDate)
   if (loading || tasks.length === 0) return null
 
   const groups: { date: string; tasks: TaskItem[] }[] = []
@@ -122,7 +128,10 @@ export function ReplanView() {
 
           <div className="flex flex-1 flex-col overflow-y-auto">
             <DayColumn date={viewDate} />
-            <UpcomingSection onJumpTo={setViewDate} />
+            <UpcomingSection
+              afterDate={viewDate > todayDateString() ? viewDate : todayDateString()}
+              onJumpTo={setViewDate}
+            />
           </div>
         </>
       )}
