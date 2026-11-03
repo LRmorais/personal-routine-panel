@@ -49,6 +49,7 @@ export type TaskItem = {
   createdAt: Timestamp | null
   order?: number
   durationHours?: number | null
+  sourceWorkTaskId?: string | null
 }
 
 export type ReplanHistoryEntry = {

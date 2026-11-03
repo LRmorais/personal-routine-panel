@@ -6,6 +6,7 @@ const InboxView = lazy(() => import('./features/inbox/InboxView').then((m) => ({
 const ReplanView = lazy(() =>
   import('./features/replanning/ReplanView').then((m) => ({ default: m.ReplanView })),
 )
+const WorkView = lazy(() => import('./features/work/WorkView').then((m) => ({ default: m.WorkView })))
 const ReportsView = lazy(() =>
   import('./features/reports/ReportsView').then((m) => ({ default: m.ReportsView })),
 )
@@ -13,6 +14,7 @@ const ReportsView = lazy(() =>
 const TABS = [
   { key: 'inbox', label: 'Inbox', view: InboxView },
   { key: 'replan', label: 'Tarefas', view: ReplanView },
+  { key: 'work', label: 'Trabalho', view: WorkView },
   { key: 'reports', label: 'Relatórios', view: ReportsView },
 ] as const
 
