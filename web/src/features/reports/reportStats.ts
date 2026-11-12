@@ -155,17 +155,3 @@ export function compareStats(current: ReportStats, previous: ReportStats): Stats
 
   return { completionRateDelta, totalHoursDelta, doneCountDelta, notDoneCountDelta, trend }
 }
-
-export function statsFingerprint(stats: ReportStats): string {
-  const categoryPart = stats.byCategory
-    .map((c) => `${c.id}:${c.total}:${c.done}:${c.hours.toFixed(2)}`)
-    .join(',')
-  return [
-    stats.totalTasks,
-    stats.doneCount,
-    stats.notDoneCount,
-    stats.openCount,
-    stats.totalHours.toFixed(2),
-    categoryPart,
-  ].join('|')
-}

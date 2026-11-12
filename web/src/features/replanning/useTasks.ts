@@ -281,3 +281,35 @@ export function useUpcomingTasks(afterDate: string = todayDateString()) {
 
   return { tasks, loading }
 }
+
+const OVERDUE_LIMIT = 50
+
+/** Open tasks planned for a day before `beforeDate` that were never closed. Oldest first. */
+export function useOverdueTasks(beforeDate: string = todayDateString()) {
+  const { user } = useAuth()
+  const [tasks, setTasks] = useState<TaskItem[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const q = query(
+      collection(db, 'users', user.uid, 'tasks'),
+      where('status', 'in', ['pending', 'in_progress'] satisfies TaskStatus[]),
+      where('planDate', '<', beforeDate),
+      orderBy('planDate', 'asc'),
+      limit(OVERDUE_LIMIT),
+    )
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        setTasks(snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as TaskItem))
+        setLoading(false)
+      },
+      (err) => {
+        console.error('useOverdueTasks onSnapshot error', err)
+        setLoading(false)
+      },
+    )
+  }, [user.uid, beforeDate])
+
+  return { tasks, loading }
+}

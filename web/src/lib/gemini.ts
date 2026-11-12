@@ -58,51 +58,6 @@ async function generateStructuredContent<T>(prompt: string, responseSchema: obje
   }
 }
 
-export type ReportNarrativeResult = {
-  narrative: string
-  highlights: string[]
-  suggestions: string[]
-}
-
-const NARRATIVE_SCHEMA = {
-  type: 'object',
-  properties: {
-    narrative: { type: 'string' },
-    highlights: { type: 'array', items: { type: 'string' } },
-    suggestions: { type: 'array', items: { type: 'string' } },
-  },
-  required: ['narrative', 'highlights', 'suggestions'],
-}
-
-export function generateReportNarrative(
-  statsJson: string,
-  comparisonJson: string | null,
-  periodLabel: string,
-): Promise<ReportNarrativeResult> {
-  const prompt = `Você é um assistente que analisa a produtividade e a rotina de uma única pessoa a partir de dados reais de um app de tarefas pessoal. Contexto: ela trabalha home office, atende 3 clientes/empresas (Clube Gazeta, Montreal, Techlead), e também registra atividades da vida pessoal no mesmo app (levar a esposa ao trabalho, tarefas de casa, mercado, academia).
-
-Período analisado: ${periodLabel}
-
-Estatísticas do período (JSON):
-${statsJson}
-
-${comparisonJson ? `Comparação com o período anterior (JSON):\n${comparisonJson}\n` : ''}
-O campo "byCategory" agrupa as tarefas por área. Cada grupo tem um "type": "work" (cliente/empresa: Clube Gazeta, Montreal, Techlead) ou "life" (vida pessoal: Academia, Casa, Esposa/Transporte, Mercado). O grupo "Avulsa" (type "life") é o que sobra sem categoria clara.
-
-Escreva um resumo (5 a 7 frases) em português do Brasil, em tom direto e honesto (elogie o que foi bem, mas aponte claramente onde o desempenho caiu), cobrindo:
-1. Uma avaliação geral do lado profissional: olhando só os grupos "work", a pessoa trabalhou bem neste período? Baseie-se na taxa de conclusão desses grupos, no volume de tarefas não concluídas e na tendência em relação ao período anterior.
-2. Como foi o trabalho em cada cliente/empresa presente em "byCategory" com type "work" — onde foi o maior volume de horas, e como ficou a taxa de conclusão em cada um.
-3. Um comentário breve sobre a rotina pessoal (grupos "life": academia, casa, esposa/transporte, mercado, avulsa) — não trate baixa conclusão nessas áreas como um problema de desempenho, é só contexto de rotina (ex: quantas vezes foi à academia, se a rotina de levar a esposa foi constante).
-
-Depois, liste de 3 a 5 destaques curtos (highlights), cada um com no máximo 1 frase, priorizando os pontos mais acionáveis do lado profissional (ex: um cliente específico com baixa conclusão, dia mais produtivo, tendência de piora/melhora); no máximo 1 highlight pode ser sobre a vida pessoal.
-
-Por fim, liste de 2 a 4 sugestões práticas e específicas (suggestions) pra essa pessoa melhorar produtividade e organização no próximo período — baseadas nos padrões reais que você identificou nesses dados (ex: dia da semana fraco, cliente com muita tarefa não concluída, tarefas avulsas competindo com trabalho, poucas tarefas com duração registrada dificultando o próprio acompanhamento). Evite conselhos genéricos que não tenham relação com os números apresentados; se não houver um padrão claro o suficiente pra sugerir algo específico, sugira algo simples relacionado ao próprio hábito de registro (ex: registrar duração com mais consistência).
-
-Responda apenas com JSON válido no formato solicitado. Não invente números além dos fornecidos nas estatísticas acima. Se algum grupo de "byCategory" não tiver tarefas neste período, não o mencione.`
-
-  return generateStructuredContent<ReportNarrativeResult>(prompt, NARRATIVE_SCHEMA)
-}
-
 export type DurationExtractionInput = {
   id: string
   title: string

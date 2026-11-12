@@ -1,8 +1,11 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState, type ComponentType } from 'react'
 import { AuthGate, useAuth } from './auth/AuthGate'
 import { ActionSheet } from './components/ActionSheet'
 import { ProgressProvider, useProgress } from './features/progress/ProgressProvider'
 
+const DashboardView = lazy(() =>
+  import('./features/dashboard/DashboardView').then((m) => ({ default: m.DashboardView })),
+)
 const InboxView = lazy(() => import('./features/inbox/InboxView').then((m) => ({ default: m.InboxView })))
 const ReplanView = lazy(() =>
   import('./features/replanning/ReplanView').then((m) => ({ default: m.ReplanView })),
@@ -13,6 +16,7 @@ const ReportsView = lazy(() =>
 )
 
 const TABS = [
+  { key: 'dashboard', label: 'Início', icon: '🏠', view: DashboardView },
   { key: 'inbox', label: 'Inbox', icon: '📥', view: InboxView },
   { key: 'replan', label: 'Hoje', icon: '🎯', view: ReplanView },
   { key: 'work', label: 'Trabalho', icon: '💼', view: WorkView },
@@ -54,7 +58,7 @@ function RoutineApp() {
   const { user, signOutUser } = useAuth()
   const [activeTab, setActiveTab] = useState<TabKey>(() => {
     const fromUrl = new URLSearchParams(window.location.search).get('view')
-    return isTabKey(fromUrl) ? fromUrl : 'inbox'
+    return isTabKey(fromUrl) ? fromUrl : 'dashboard'
   })
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
 
@@ -64,7 +68,9 @@ function RoutineApp() {
     window.history.replaceState({}, '', url)
   }, [activeTab])
 
-  const ActiveView = TABS.find((tab) => tab.key === activeTab)!.view
+  const ActiveView = TABS.find((tab) => tab.key === activeTab)!.view as ComponentType<{
+    onNavigate: (tab: TabKey) => void
+  }>
   const initial = (user.email ?? '?')[0].toUpperCase()
 
   return (
@@ -90,7 +96,7 @@ function RoutineApp() {
 
       <main className="flex-1 overflow-y-auto">
         <Suspense fallback={<div className="p-4 text-sm text-slate-500">Carregando...</div>}>
-          <ActiveView />
+          <ActiveView onNavigate={setActiveTab} />
         </Suspense>
       </main>
 
@@ -101,7 +107,7 @@ function RoutineApp() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex flex-1 flex-col items-center gap-0.5 rounded-xl py-2 text-[11px] font-semibold transition ${
+              className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl py-2 text-[10px] font-semibold transition ${
                 active ? 'btn-primary text-white' : 'text-slate-400 active:bg-slate-800'
               }`}
             >

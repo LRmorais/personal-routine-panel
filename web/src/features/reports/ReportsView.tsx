@@ -3,7 +3,6 @@ import { ErrorBanner } from '../../components/ErrorBanner'
 import {
   addDays,
   addMonths,
-  formatDateTime,
   formatMonthLabel,
   formatWeekRangeLabel,
   startOfMonth,
@@ -11,9 +10,8 @@ import {
   todayDateString,
 } from '../../lib/dates'
 import { BackfillPanel } from './BackfillPanel'
-import { compareStats, computeReportStats, statsFingerprint } from './reportStats'
+import { compareStats, computeReportStats } from './reportStats'
 import { currentRangeFor, useReportData, type PeriodType } from './useReportData'
-import { useReportNarrative } from './useReportNarrative'
 
 function PeriodNavigator({
   periodType,
@@ -99,17 +97,6 @@ export function ReportsView() {
   const comparison = useMemo(() => compareStats(stats, previousStats), [stats, previousStats])
   const hasPreviousData = previousStats.totalTasks > 0
 
-  const periodLabel =
-    periodType === 'week'
-      ? formatWeekRangeLabel(currentRange.start, currentRange.end)
-      : formatMonthLabel(currentRange.start)
-
-  const { cachedReport, generating, generateError, generateNarrative } = useReportNarrative(
-    periodType,
-    currentRange.start,
-    currentRange.end,
-  )
-  const isStale = cachedReport != null && cachedReport.statsFingerprint !== statsFingerprint(stats)
   const maxWeekdayHours = Math.max(...stats.byWeekday.map((d) => d.hours), 1)
 
   return (
@@ -219,57 +206,6 @@ export function ReportsView() {
               })}
             </div>
           )}
-
-          <div className="mt-4 rounded-lg border border-purple-800 bg-purple-950/20 p-4">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-medium text-slate-200">Resumo com IA</p>
-              <button
-                onClick={() => generateNarrative(stats, hasPreviousData ? comparison : null, periodLabel)}
-                disabled={generating || stats.totalTasks === 0}
-                className="shrink-0 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-medium text-white active:bg-purple-700 disabled:opacity-50"
-              >
-                {generating ? 'Gerando...' : cachedReport ? 'Gerar novamente' : 'Gerar resumo com IA'}
-              </button>
-            </div>
-
-            {stats.totalTasks === 0 && !cachedReport && (
-              <p className="mt-2 text-xs text-slate-500">Sem tarefas neste período pra gerar resumo.</p>
-            )}
-
-            {cachedReport && (
-              <div className="mt-2">
-                <p className="text-sm text-slate-200">{cachedReport.narrative}</p>
-                {cachedReport.highlights.length > 0 && (
-                  <ul className="mt-2 flex flex-col gap-1">
-                    {cachedReport.highlights.map((highlight, i) => (
-                      <li key={i} className="text-xs text-slate-400">
-                        • {highlight}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {(cachedReport.suggestions ?? []).length > 0 && (
-                  <div className="mt-3 border-t border-purple-900/40 pt-2">
-                    <p className="text-xs uppercase tracking-wide text-purple-300">Sugestões</p>
-                    <ul className="mt-1 flex flex-col gap-1">
-                      {cachedReport.suggestions.map((suggestion, i) => (
-                        <li key={i} className="text-xs text-slate-300">
-                          → {suggestion}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                <p className="mt-2 text-[10px] text-slate-600">
-                  Gerado em{' '}
-                  {cachedReport.generatedAt ? formatDateTime(cachedReport.generatedAt.toDate()) : '—'}
-                  {isStale && ' · desatualizado (os dados mudaram desde a última geração)'}
-                </p>
-              </div>
-            )}
-
-            {generateError && <p className="mt-2 text-sm text-red-400">{generateError}</p>}
-          </div>
         </>
       )}
 
