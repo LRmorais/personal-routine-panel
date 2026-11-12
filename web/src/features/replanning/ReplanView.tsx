@@ -3,6 +3,7 @@ import { DayColumn } from './DayColumn'
 import { addDays, formatDayLabel, startOfWeek, todayDateString } from '../../lib/dates'
 import { useUpcomingTasks, type TaskItem } from './useTasks'
 import { WeekView } from './WeekView'
+import { TodayHero } from '../progress/TodayHero'
 
 function DayNavigator({
   date,
@@ -16,20 +17,20 @@ function DayNavigator({
       <button
         onClick={() => onChange(addDays(date, -1))}
         aria-label="Dia anterior"
-        className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 active:bg-slate-800"
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-800/70 text-lg text-slate-300 active:bg-slate-700"
       >
         ‹
       </button>
       <button
         onClick={() => onChange(todayDateString())}
-        className="min-w-28 text-center text-base font-medium text-slate-100 active:text-blue-400"
+        className="min-w-28 text-center text-base font-bold text-slate-50 active:text-blue-400"
       >
         {formatDayLabel(date)}
       </button>
       <button
         onClick={() => onChange(addDays(date, 1))}
         aria-label="Próximo dia"
-        className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 active:bg-slate-800"
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-800/70 text-lg text-slate-300 active:bg-slate-700"
       >
         ›
       </button>
@@ -71,7 +72,7 @@ function UpcomingSection({
                 <button
                   key={task.id}
                   onClick={() => onJumpTo(group.date)}
-                  className="w-full rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-left text-sm text-slate-300 active:bg-slate-800"
+                  className="w-full rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-2.5 text-left text-sm text-slate-300 active:bg-slate-800"
                 >
                   {task.title}
                 </button>
@@ -91,16 +92,16 @@ export function ReplanView() {
 
   return (
     <div className="flex h-full flex-col p-4">
-      <h2 className="text-lg font-semibold text-slate-100">Tarefas</h2>
+      <h2 className="text-2xl font-extrabold tracking-tight text-slate-50">Hoje</h2>
       <p className="mt-1 text-sm text-slate-400">
         No fim do dia, toda tarefa pendente precisa de um motivo pra ir pra amanhã.
       </p>
 
-      <div className="mt-3 flex justify-center gap-1 rounded-lg bg-slate-900 p-1">
+      <div className="mt-3 flex justify-center gap-1 rounded-xl border border-slate-800 bg-slate-900 p-1">
         <button
           onClick={() => setMode('day')}
           className={`flex-1 rounded-md py-1.5 text-sm font-medium ${
-            mode === 'day' ? 'bg-slate-800 text-slate-100' : 'text-slate-500'
+            mode === 'day' ? 'btn-primary text-white' : 'text-slate-400'
           }`}
         >
           Dia
@@ -111,7 +112,7 @@ export function ReplanView() {
             setMode('week')
           }}
           className={`flex-1 rounded-md py-1.5 text-sm font-medium ${
-            mode === 'week' ? 'bg-slate-800 text-slate-100' : 'text-slate-500'
+            mode === 'week' ? 'btn-primary text-white' : 'text-slate-400'
           }`}
         >
           Semana
@@ -126,7 +127,10 @@ export function ReplanView() {
             <DayNavigator date={viewDate} onChange={setViewDate} />
           </div>
 
-          <div className="flex flex-1 flex-col overflow-y-auto">
+          <div className="flex flex-1 flex-col overflow-y-auto pb-4">
+            <div className="mt-3">
+              <TodayHero />
+            </div>
             <DayColumn date={viewDate} />
             <UpcomingSection
               afterDate={viewDate > todayDateString() ? viewDate : todayDateString()}

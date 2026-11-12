@@ -27,7 +27,7 @@ function RenameClientPanel({
       <button
         onClick={() => value.trim() && onSave(value)}
         disabled={!value.trim()}
-        className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white active:bg-blue-700 disabled:opacity-50"
+        className="rounded-lg btn-primary px-3 py-2 text-sm font-medium text-white active:bg-blue-700 disabled:opacity-50"
       >
         Salvar
       </button>
@@ -84,7 +84,7 @@ export function WorkClientList({
 
   return (
     <div className="flex flex-col">
-      <h2 className="text-lg font-semibold text-slate-100">Trabalho</h2>
+      <h2 className="text-2xl font-extrabold tracking-tight text-slate-50">Trabalho</h2>
       <p className="mt-1 text-sm text-slate-400">Seus clientes e projetos.</p>
 
       <form onSubmit={onSubmit} className="mt-4 flex gap-2">
@@ -98,7 +98,7 @@ export function WorkClientList({
         <button
           type="submit"
           disabled={!name.trim()}
-          className="shrink-0 rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white active:bg-blue-700 disabled:opacity-50"
+          className="shrink-0 rounded-lg btn-primary px-4 py-2.5 font-medium text-white active:bg-blue-700 disabled:opacity-50"
         >
           Adicionar
         </button>
@@ -120,7 +120,7 @@ export function WorkClientList({
               ? ''
               : client.id === selectedClientId
                 ? 'rounded-lg border border-blue-700 bg-blue-950/20 px-3 py-2.5'
-                : 'rounded-lg border border-slate-800 bg-slate-900 px-3 py-2.5'
+                : 'card px-3 py-2.5'
           }
         >
           {(client, dragHandleProps) =>

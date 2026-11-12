@@ -28,7 +28,7 @@ export function BackfillPanel() {
   } = useDurationBackfill()
 
   return (
-    <div className="mt-6 rounded-lg border border-slate-800 bg-slate-900 p-4">
+    <div className="mt-6 card p-4">
       <button
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between text-sm font-medium text-slate-200"
@@ -128,7 +128,7 @@ export function BackfillPanel() {
               <button
                 onClick={applySelected}
                 disabled={applying}
-                className="self-start rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white active:bg-blue-700 disabled:opacity-50"
+                className="self-start rounded-lg btn-primary px-3 py-1.5 text-sm font-medium text-white active:bg-blue-700 disabled:opacity-50"
               >
                 {applying ? 'Aplicando...' : 'Aplicar selecionados'}
               </button>

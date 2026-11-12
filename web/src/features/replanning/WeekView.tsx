@@ -17,20 +17,20 @@ function WeekNavigator({
       <button
         onClick={() => onChange(addDays(weekStart, -7))}
         aria-label="Semana anterior"
-        className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 active:bg-slate-800"
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-800/70 text-lg text-slate-300 active:bg-slate-700"
       >
         ‹
       </button>
       <button
         onClick={() => onChange(startOfWeek(todayDateString()))}
-        className="min-w-28 text-center text-base font-medium text-slate-100 active:text-blue-400"
+        className="min-w-28 text-center text-base font-bold text-slate-50 active:text-blue-400"
       >
         {formatWeekRangeLabel(weekStart)}
       </button>
       <button
         onClick={() => onChange(addDays(weekStart, 7))}
         aria-label="Próxima semana"
-        className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 active:bg-slate-800"
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-800/70 text-lg text-slate-300 active:bg-slate-700"
       >
         ›
       </button>

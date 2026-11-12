@@ -2,6 +2,7 @@ import { useState, type FormEvent, type ReactNode } from 'react'
 import { ActionSheet } from '../../components/ActionSheet'
 import { ErrorBanner } from '../../components/ErrorBanner'
 import { DragHandle, SortableList } from '../../components/SortableList'
+import { fireConfettiFrom } from '../../lib/confetti'
 import { tomorrowDateString } from '../../lib/dates'
 import { REPLAN_REASONS, useReplanHistory, useTasks, type ReplanReason, type TaskItem } from './useTasks'
 
@@ -27,7 +28,7 @@ function PushTaskPanel({
             onClick={() => setReason(r.value)}
             className={`rounded-full border px-3 py-1 text-xs ${
               reason === r.value
-                ? 'border-blue-500 bg-blue-600 text-white'
+                ? 'border-blue-500 btn-primary text-white'
                 : 'border-slate-700 text-slate-300'
             }`}
           >
@@ -189,9 +190,9 @@ function ClosedTaskRow({
   return (
     <div
       onClick={selectionMode ? onToggleSelect : undefined}
-      className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 ${selectionMode ? 'cursor-pointer' : ''} ${
+      className={`flex items-center gap-2.5 rounded-2xl border px-3.5 py-3 ${selectionMode ? 'cursor-pointer' : ''} ${
         isDone
-          ? 'animate-[task-complete-pop_0.35s_ease-out] border-green-900 bg-green-950/30'
+          ? 'animate-pop border-green-800/60 bg-green-950/30'
           : 'border-red-900/60 bg-red-950/10'
       }`}
     >
@@ -206,8 +207,8 @@ function ClosedTaskRow({
         </span>
       ) : (
         <span
-          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs text-white ${
-            isDone ? 'bg-green-600' : 'bg-red-900'
+          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs text-white ${
+            isDone ? 'bg-green-500' : 'bg-red-900'
           }`}
         >
           {isDone ? '✓' : '✕'}
@@ -259,7 +260,7 @@ function EditTaskPanel({
       <button
         onClick={() => title.trim() && onSave(title)}
         disabled={!title.trim()}
-        className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white active:bg-blue-700 disabled:opacity-50"
+        className="rounded-lg btn-primary px-3 py-2 text-sm font-medium text-white active:bg-blue-700 disabled:opacity-50"
       >
         Salvar
       </button>
@@ -313,7 +314,7 @@ function TaskDetails({
       </div>
       {task.pushCount > 0 && (
         <div className="mt-2">
-          <p className="text-xs uppercase tracking-wide text-slate-500">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
             Histórico de adiamento ({task.pushCount}x)
           </p>
           {loading && <p className="text-xs text-slate-500">Carregando...</p>}
@@ -451,7 +452,7 @@ export function DayColumn({
         <button
           type="submit"
           disabled={!title.trim()}
-          className="shrink-0 rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white active:bg-blue-700 disabled:opacity-50"
+          className="shrink-0 rounded-lg btn-primary px-4 py-2.5 font-medium text-white active:bg-blue-700 disabled:opacity-50"
         >
           Adicionar
         </button>
@@ -461,15 +462,15 @@ export function DayColumn({
 
       {tasks.length > 0 && (
         <div className="mt-4">
-          <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Progresso</span>
-            <span>
+          <div className="flex items-center justify-between text-xs font-medium text-slate-400">
+            <span>{done.length === tasks.length ? 'Tudo feito! 🎉' : 'Progresso do dia'}</span>
+            <span className="text-slate-200">
               {done.length}/{tasks.length}
             </span>
           </div>
-          <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-800">
+          <div className="mt-1.5 h-3 overflow-hidden rounded-full bg-slate-800">
             <div
-              className="h-full rounded-full bg-green-500 transition-all duration-500"
+              className="h-full rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-emerald-400 transition-all duration-700"
               style={{ width: `${(done.length / tasks.length) * 100}%` }}
             />
           </div>
@@ -550,8 +551,8 @@ export function DayColumn({
             pushingTaskId === task.id || duplicatingTaskId === task.id || editingTaskId === task.id
               ? ''
               : task.status === 'in_progress'
-                ? 'rounded-lg border border-blue-700 bg-blue-950/20 px-3 py-2.5'
-                : 'rounded-lg border border-slate-800 bg-slate-900 px-3 py-2.5'
+                ? 'rounded-2xl border border-blue-500/70 bg-blue-950/40 px-3.5 py-3 shadow-[0_0_20px_-8px_rgb(139_92_246/0.8)]'
+                : 'card px-3.5 py-3'
           }
         >
           {(task, dragHandleProps) =>
@@ -594,10 +595,13 @@ export function DayColumn({
                     </button>
                   ) : (
                     <button
-                      onClick={() => completeTask(task.id)}
+                      onClick={(e) => {
+                        fireConfettiFrom(e.currentTarget, pending.length === 1 ? 70 : 24)
+                        completeTask(task.id)
+                      }}
                       aria-label="Concluir"
-                      className={`h-5 w-5 shrink-0 rounded-full border-2 active:border-green-500 ${
-                        task.status === 'in_progress' ? 'border-blue-500 bg-blue-500/30' : 'border-slate-600'
+                      className={`h-7 w-7 shrink-0 rounded-full border-2 transition active:scale-90 active:border-green-400 active:bg-green-500/30 ${
+                        task.status === 'in_progress' ? 'border-blue-400 bg-blue-500/30' : 'border-slate-500'
                       }`}
                     />
                   )}
@@ -647,7 +651,7 @@ export function DayColumn({
 
         {done.length > 0 && (
           <div className="mt-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
               Concluídas · {done.length} 🎉
             </p>
             <div className="mt-2 flex flex-col gap-2">
@@ -694,7 +698,7 @@ export function DayColumn({
 
         {notDone.length > 0 && (
           <div className="mt-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
               Não concluídas · {notDone.length}
             </p>
             <div className="mt-2 flex flex-col gap-2">

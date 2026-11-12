@@ -42,7 +42,7 @@ function PeriodNavigator({
       <button
         onClick={goPrev}
         aria-label="Período anterior"
-        className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 active:bg-slate-800"
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-800/70 text-lg text-slate-300 active:bg-slate-700"
       >
         ‹
       </button>
@@ -51,7 +51,7 @@ function PeriodNavigator({
         onClick={goNext}
         disabled={isCurrentPeriod}
         aria-label="Próximo período"
-        className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 active:bg-slate-800 disabled:opacity-30"
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-800/70 text-lg text-slate-300 active:bg-slate-700 disabled:opacity-30"
       >
         ›
       </button>
@@ -61,7 +61,7 @@ function PeriodNavigator({
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900 p-3">
+    <div className="card p-3">
       <p className="text-xs text-slate-500">{label}</p>
       <p className="mt-1 text-lg font-semibold text-slate-100">{value}</p>
     </div>
@@ -114,14 +114,14 @@ export function ReportsView() {
 
   return (
     <div className="flex h-full flex-col overflow-y-auto p-4">
-      <h2 className="text-lg font-semibold text-slate-100">Relatórios</h2>
+      <h2 className="text-2xl font-extrabold tracking-tight text-slate-50">Evolução</h2>
       <p className="mt-1 text-sm text-slate-400">Sua produtividade por semana ou mês.</p>
 
-      <div className="mt-3 flex justify-center gap-1 rounded-lg bg-slate-900 p-1">
+      <div className="mt-3 flex justify-center gap-1 rounded-xl border border-slate-800 bg-slate-900 p-1">
         <button
           onClick={() => setPeriodType('week')}
           className={`flex-1 rounded-md py-1.5 text-sm font-medium ${
-            periodType === 'week' ? 'bg-slate-800 text-slate-100' : 'text-slate-500'
+            periodType === 'week' ? 'btn-primary text-white' : 'text-slate-400'
           }`}
         >
           Semana
@@ -129,7 +129,7 @@ export function ReportsView() {
         <button
           onClick={() => setPeriodType('month')}
           className={`flex-1 rounded-md py-1.5 text-sm font-medium ${
-            periodType === 'month' ? 'bg-slate-800 text-slate-100' : 'text-slate-500'
+            periodType === 'month' ? 'btn-primary text-white' : 'text-slate-400'
           }`}
         >
           Mês
@@ -156,7 +156,7 @@ export function ReportsView() {
           </div>
 
           {hasPreviousData && (
-            <div className="mt-3 flex flex-wrap gap-4 rounded-lg border border-slate-800 bg-slate-900 p-3">
+            <div className="mt-3 flex flex-wrap gap-4 card p-3">
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-slate-500">Conclusão vs período anterior</span>
                 <TrendBadge delta={comparison.completionRateDelta * 100} suffix="%" />
@@ -175,7 +175,7 @@ export function ReportsView() {
                 <div key={d.weekday} className="flex flex-col items-center gap-1">
                   <div className="flex h-16 w-full items-end rounded bg-slate-900">
                     <div
-                      className="w-full rounded bg-blue-600"
+                      className="w-full rounded btn-primary"
                       style={{ height: `${(d.hours / maxWeekdayHours) * 100}%` }}
                     />
                   </div>
@@ -204,7 +204,7 @@ export function ReportsView() {
                       {group.map((c) => (
                         <div
                           key={c.id}
-                          className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900 px-3 py-2"
+                          className="flex items-center justify-between card px-3 py-2"
                         >
                           <span className="text-sm text-slate-200">{c.label}</span>
                           <span className="text-xs text-slate-400">

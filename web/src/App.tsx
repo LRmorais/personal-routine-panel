@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { AuthGate, useAuth } from './auth/AuthGate'
 import { ActionSheet } from './components/ActionSheet'
+import { ProgressProvider, useProgress } from './features/progress/ProgressProvider'
 
 const InboxView = lazy(() => import('./features/inbox/InboxView').then((m) => ({ default: m.InboxView })))
 const ReplanView = lazy(() =>
@@ -12,16 +13,41 @@ const ReportsView = lazy(() =>
 )
 
 const TABS = [
-  { key: 'inbox', label: 'Inbox', view: InboxView },
-  { key: 'replan', label: 'Tarefas', view: ReplanView },
-  { key: 'work', label: 'Trabalho', view: WorkView },
-  { key: 'reports', label: 'Relatórios', view: ReportsView },
+  { key: 'inbox', label: 'Inbox', icon: '📥', view: InboxView },
+  { key: 'replan', label: 'Hoje', icon: '🎯', view: ReplanView },
+  { key: 'work', label: 'Trabalho', icon: '💼', view: WorkView },
+  { key: 'reports', label: 'Evolução', icon: '📈', view: ReportsView },
 ] as const
 
 type TabKey = (typeof TABS)[number]['key']
 
 function isTabKey(value: string | null): value is TabKey {
   return TABS.some((tab) => tab.key === value)
+}
+
+function StreakPill() {
+  const { loading, streak, atRisk, today } = useProgress()
+  if (loading) return null
+  const alive = streak > 0
+  const doneToday = today.done > 0
+  return (
+    <div
+      title={atRisk ? 'Conclua uma tarefa hoje para manter a sequência' : 'Sequência de dias com tarefas concluídas'}
+      className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-bold ${
+        alive
+          ? doneToday
+            ? 'bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-[0_4px_16px_-4px_rgb(249_115_22/0.8)]'
+            : 'border border-orange-400/60 bg-orange-500/10 text-orange-300'
+          : 'bg-slate-800 text-slate-400'
+      }`}
+    >
+      <span className={alive && doneToday ? 'animate-flame inline-block' : alive ? 'inline-block' : 'inline-block grayscale'}>
+        🔥
+      </span>
+      <span>{streak}</span>
+      {atRisk && <span className="text-[10px] font-medium">salve hoje</span>}
+    </div>
+  )
 }
 
 function RoutineApp() {
@@ -42,19 +68,24 @@ function RoutineApp() {
   const initial = (user.email ?? '?')[0].toUpperCase()
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-slate-950 text-slate-100">
-      <header className="flex items-center justify-between border-b border-slate-800 px-4 py-3 pt-[env(safe-area-inset-top)]">
-        <div className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
-          <span className="text-lg font-semibold tracking-tight text-slate-100">Ritmo</span>
+    <div className="app-bg flex h-dvh flex-col overflow-hidden text-slate-100">
+      <header className="flex items-center justify-between px-4 pb-2 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl btn-primary text-lg font-black text-white">
+            R
+          </span>
+          <span className="text-xl font-extrabold tracking-tight text-slate-50">Ritmo</span>
         </div>
-        <button
-          onClick={() => setAccountMenuOpen(true)}
-          aria-label="Conta"
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-sm font-medium text-slate-200 active:bg-slate-700"
-        >
-          {initial}
-        </button>
+        <div className="flex items-center gap-2">
+          <StreakPill />
+          <button
+            onClick={() => setAccountMenuOpen(true)}
+            aria-label="Conta"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-sm font-semibold text-slate-200 active:bg-slate-700"
+          >
+            {initial}
+          </button>
+        </div>
       </header>
 
       <main className="flex-1 overflow-y-auto">
@@ -63,18 +94,22 @@ function RoutineApp() {
         </Suspense>
       </main>
 
-      <nav className="flex border-t border-slate-800 bg-slate-900 pb-[env(safe-area-inset-bottom)]">
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`flex-1 py-3 text-sm font-medium ${
-              activeTab === tab.key ? 'text-blue-400' : 'text-slate-500'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <nav className="mx-3 mb-[calc(env(safe-area-inset-bottom)+0.5rem)] flex gap-1 rounded-2xl border border-slate-700/60 bg-slate-900/90 p-1.5 shadow-[0_-8px_30px_-12px_rgb(0_0_0/0.8)] backdrop-blur">
+        {TABS.map((tab) => {
+          const active = activeTab === tab.key
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex flex-1 flex-col items-center gap-0.5 rounded-xl py-2 text-[11px] font-semibold transition ${
+                active ? 'btn-primary text-white' : 'text-slate-400 active:bg-slate-800'
+              }`}
+            >
+              <span className={`text-lg leading-none ${active ? '' : 'opacity-70 grayscale'}`}>{tab.icon}</span>
+              {tab.label}
+            </button>
+          )
+        })}
       </nav>
 
       {accountMenuOpen && (
@@ -91,7 +126,9 @@ function RoutineApp() {
 function App() {
   return (
     <AuthGate>
-      <RoutineApp />
+      <ProgressProvider>
+        <RoutineApp />
+      </ProgressProvider>
     </AuthGate>
   )
 }

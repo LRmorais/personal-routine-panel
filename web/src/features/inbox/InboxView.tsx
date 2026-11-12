@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { ActionSheet } from '../../components/ActionSheet'
 import { ErrorBanner } from '../../components/ErrorBanner'
 import { DragHandle, SortableList } from '../../components/SortableList'
+import { fireConfettiFrom } from '../../lib/confetti'
 import { formatDateTime, todayDateString } from '../../lib/dates'
 import { useTasks } from '../replanning/useTasks'
 import { useInboxItems, type InboxItem } from './useInboxItems'
@@ -26,7 +27,7 @@ function SchedulePicker({
       />
       <button
         onClick={() => onPick(date)}
-        className="rounded-full bg-blue-600 px-3 py-1 text-xs font-medium text-white active:bg-blue-700"
+        className="rounded-full btn-primary px-3 py-1 text-xs font-medium text-white active:bg-blue-700"
       >
         Agendar
       </button>
@@ -79,7 +80,7 @@ export function InboxView() {
 
   return (
     <div className="flex h-full flex-col p-4">
-      <h2 className="text-lg font-semibold text-slate-100">Captura rápida</h2>
+      <h2 className="text-2xl font-extrabold tracking-tight text-slate-50">Captura rápida</h2>
       <p className="mt-1 text-sm text-slate-400">Anote agora, decida depois.</p>
 
       <form onSubmit={onSubmit} className="mt-4 flex gap-2">
@@ -93,7 +94,7 @@ export function InboxView() {
         <button
           type="submit"
           disabled={!text.trim()}
-          className="rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white active:bg-blue-700 disabled:opacity-50"
+          className="rounded-lg btn-primary px-4 py-2.5 font-medium text-white active:bg-blue-700 disabled:opacity-50"
         >
           Adicionar
         </button>
@@ -102,11 +103,11 @@ export function InboxView() {
       <ErrorBanner message={error} />
 
       {items.length > 1 && (
-        <div className="mt-4 flex justify-center gap-1 rounded-lg bg-slate-900 p-1">
+        <div className="mt-4 flex justify-center gap-1 rounded-xl border border-slate-800 bg-slate-900 p-1">
           <button
             onClick={() => setSortMode('manual')}
             className={`flex-1 rounded-md py-1.5 text-sm font-medium ${
-              sortMode === 'manual' ? 'bg-slate-800 text-slate-100' : 'text-slate-500'
+              sortMode === 'manual' ? 'btn-primary text-white' : 'text-slate-400'
             }`}
           >
             Minha ordem
@@ -114,7 +115,7 @@ export function InboxView() {
           <button
             onClick={() => setSortMode('date')}
             className={`flex-1 rounded-md py-1.5 text-sm font-medium ${
-              sortMode === 'date' ? 'bg-slate-800 text-slate-100' : 'text-slate-500'
+              sortMode === 'date' ? 'btn-primary text-white' : 'text-slate-400'
             }`}
           >
             Data e hora
@@ -131,15 +132,18 @@ export function InboxView() {
         <SortableList
           items={displayItems}
           onReorder={moveItem}
-          rowClassName="flex flex-col gap-2 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2.5"
+          rowClassName="flex flex-col gap-2 card px-3 py-2.5"
         >
           {(item, dragHandleProps) => (
             <>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => resolveItem(item.id)}
+                  onClick={(e) => {
+                    fireConfettiFrom(e.currentTarget, 18)
+                    resolveItem(item.id)
+                  }}
                   aria-label="Resolver"
-                  className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-600 active:border-green-500"
+                  className="h-7 w-7 shrink-0 rounded-full border-2 border-slate-500 transition active:scale-90 active:border-green-400"
                 />
                 <div className="flex-1">
                   <p className="text-slate-100">{item.text}</p>
@@ -169,13 +173,13 @@ export function InboxView() {
 
         {resolvedItems.length > 0 && (
           <>
-            <p className="mt-4 text-xs uppercase tracking-wide text-slate-500">
+            <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-slate-400">
               Resolvidos · {resolvedItems.length}
             </p>
             {resolvedItems.map((item) => (
               <div
                 key={item.id}
-                className="flex animate-[task-complete-pop_0.35s_ease-out] items-center gap-2.5 rounded-lg border border-green-900 bg-green-950/30 px-3 py-2.5"
+                className="flex animate-pop items-center gap-2.5 rounded-2xl border border-green-800/60 bg-green-950/30 px-3 py-2.5"
               >
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs text-white">
                   ✓

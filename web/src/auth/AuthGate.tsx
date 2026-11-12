@@ -62,10 +62,13 @@ function LoginScreen() {
   }
 
   return (
-    <div className="flex h-dvh flex-col items-center justify-center gap-4 bg-slate-950 px-6 text-slate-100">
-      <div className="flex items-center gap-2">
-        <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
-        <h1 className="text-2xl font-semibold tracking-tight">Ritmo</h1>
+    <div className="app-bg flex h-dvh flex-col items-center justify-center gap-5 px-6 text-slate-100">
+      <div className="flex flex-col items-center gap-3">
+        <span className="flex h-16 w-16 items-center justify-center rounded-3xl btn-primary text-3xl font-black text-white">
+          R
+        </span>
+        <h1 className="text-3xl font-extrabold tracking-tight">Ritmo</h1>
+        <p className="max-w-60 text-center text-sm text-slate-400">Um dia de cada vez. Construa sua sequência.</p>
       </div>
       <form onSubmit={onSubmit} className="flex w-full max-w-xs flex-col gap-3">
         <input
@@ -74,7 +77,7 @@ function LoginScreen() {
           placeholder="E-mail"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-slate-100 placeholder:text-slate-500"
+          className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 placeholder:text-slate-500"
         />
         <input
           type="password"
@@ -83,12 +86,12 @@ function LoginScreen() {
           placeholder="Senha"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-slate-100 placeholder:text-slate-500"
+          className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 placeholder:text-slate-500"
         />
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-lg bg-blue-600 px-5 py-2.5 font-medium text-white active:bg-blue-700 disabled:opacity-50"
+          className="rounded-xl btn-primary px-5 py-3 font-medium text-white active:bg-blue-700 disabled:opacity-50"
         >
           {mode === 'signup' ? 'Criar conta' : 'Entrar'}
         </button>

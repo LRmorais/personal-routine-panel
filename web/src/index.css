@@ -1,7 +1,64 @@
 @import "tailwindcss";
 
+/*
+ * Ritmo theme — "ink & ember".
+ * Deep indigo surfaces (slate scale), vivid violet accent (blue scale, so every
+ * existing `blue-*` class picks it up), fuchsia secondary (purple scale),
+ * emerald for "done" (green scale). Streak/flame uses the amber/orange scale.
+ */
+@theme {
+  --font-sans: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.75rem;
+
+  --color-slate-50: #f8f7ff;
+  --color-slate-100: #f1eeff;
+  --color-slate-200: #ddd8f7;
+  --color-slate-300: #bfb8e4;
+  --color-slate-400: #9d95ca;
+  --color-slate-500: #857eab;
+  --color-slate-600: #544d7a;
+  --color-slate-700: #38325a;
+  --color-slate-800: #262146;
+  --color-slate-900: #1a1636;
+  --color-slate-950: #0f0c22;
+
+  --color-blue-300: #c4b5fd;
+  --color-blue-400: #a78bfa;
+  --color-blue-500: #8b5cf6;
+  --color-blue-600: #7c3aed;
+  --color-blue-700: #6d28d9;
+  --color-blue-800: #5b2fb8;
+  --color-blue-900: #3b1a73;
+  --color-blue-950: #1e0f4a;
+
+  --color-purple-300: #f0abfc;
+  --color-purple-400: #e879f9;
+  --color-purple-500: #d946ef;
+  --color-purple-600: #c026d3;
+  --color-purple-700: #a21caf;
+  --color-purple-800: #86198f;
+  --color-purple-900: #701a75;
+  --color-purple-950: #4a044e;
+
+  --color-green-400: #34d399;
+  --color-green-500: #10b981;
+  --color-green-600: #059669;
+  --color-green-700: #047857;
+  --color-green-800: #065f46;
+  --color-green-900: #064e3b;
+  --color-green-950: #022c22;
+
+  --animate-pop: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-rise: rise 0.35s ease-out both;
+  --animate-flame: flame 1.6s ease-in-out infinite;
+}
+
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
 }
 
 html,
@@ -14,9 +71,84 @@ body,
 
 body {
   margin: 0;
+  background: #0f0c22;
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Soft aurora behind the whole app. */
+.app-bg {
+  background:
+    radial-gradient(70% 40% at 15% -5%, rgb(139 92 246 / 0.28), transparent 70%),
+    radial-gradient(60% 35% at 100% 0%, rgb(217 70 239 / 0.16), transparent 70%),
+    #0f0c22;
+}
+
+/* Primary call-to-action: replaces the flat `btn-primary`. */
+.btn-primary {
+  background-image: linear-gradient(135deg, #8b5cf6 0%, #c026d3 100%);
+  box-shadow: 0 6px 18px -6px rgb(139 92 246 / 0.7);
+  transition:
+    transform 0.12s ease,
+    filter 0.12s ease;
+}
+.btn-primary:active {
+  transform: scale(0.96);
+  filter: brightness(0.92);
+}
+.btn-primary:disabled {
+  box-shadow: none;
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgb(139 92 246 / 0.25);
+}
+
+/* Cards that float slightly above the background. */
+.card {
+  background: linear-gradient(180deg, rgb(38 33 70 / 0.75), rgb(26 22 54 / 0.75));
+  border: 1px solid rgb(139 92 246 / 0.14);
+  border-radius: 1.25rem;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.4;
+  }
+  60% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes flame {
+  0%,
+  100% {
+    transform: scale(1) rotate(-3deg);
+  }
+  50% {
+    transform: scale(1.12) rotate(3deg);
+  }
+}
+
+/* Kept under the old name: other views still reference it by arbitrary value. */
 @keyframes task-complete-pop {
   0% {
     transform: scale(0.95);
@@ -28,5 +160,27 @@ body {
   100% {
     transform: scale(1);
     opacity: 1;
+  }
+}
+
+/* Confetti pieces are created by lib/confetti.ts. */
+@keyframes confetti-burst {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(0.6);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

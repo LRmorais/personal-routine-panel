@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { ActionSheet } from '../../components/ActionSheet'
 import { ErrorBanner } from '../../components/ErrorBanner'
 import { DragHandle, SortableList } from '../../components/SortableList'
+import { fireConfettiFrom } from '../../lib/confetti'
 import { todayDateString } from '../../lib/dates'
 import { useWorkTasks, type WorkTask } from './useWorkTasks'
 
@@ -28,7 +29,7 @@ function EditTaskPanel({
       <button
         onClick={() => title.trim() && onSave(title)}
         disabled={!title.trim()}
-        className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white active:bg-blue-700 disabled:opacity-50"
+        className="rounded-lg btn-primary px-3 py-2 text-sm font-medium text-white active:bg-blue-700 disabled:opacity-50"
       >
         Salvar
       </button>
@@ -92,7 +93,7 @@ function SubtaskChecklist({
                     aria-label="Iniciar subtask"
                     className={`flex h-6 w-6 items-center justify-center rounded text-xs ${
                       subtask.inProgress
-                        ? 'bg-blue-600 text-white'
+                        ? 'btn-primary text-white'
                         : 'bg-slate-800 text-slate-400 active:bg-slate-700'
                     }`}
                   >
@@ -199,7 +200,7 @@ export function WorkTaskList({
         <button
           type="submit"
           disabled={!title.trim()}
-          className="shrink-0 rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white active:bg-blue-700 disabled:opacity-50"
+          className="shrink-0 rounded-lg btn-primary px-4 py-2.5 font-medium text-white active:bg-blue-700 disabled:opacity-50"
         >
           Adicionar
         </button>
@@ -220,8 +221,8 @@ export function WorkTaskList({
             editingTaskId === task.id
               ? ''
               : task.status === 'in_progress'
-                ? 'rounded-lg border border-blue-700 bg-blue-950/20 px-3 py-2.5'
-                : 'rounded-lg border border-slate-800 bg-slate-900 px-3 py-2.5'
+                ? 'rounded-2xl border border-blue-500/70 bg-blue-950/40 px-3.5 py-3'
+                : 'card px-3.5 py-3'
           }
         >
           {(task, dragHandleProps) =>
@@ -238,10 +239,13 @@ export function WorkTaskList({
               <>
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => completeTask(task.id)}
+                    onClick={(e) => {
+                      fireConfettiFrom(e.currentTarget)
+                      completeTask(task.id)
+                    }}
                     aria-label="Concluir"
-                    className={`h-5 w-5 shrink-0 rounded-full border-2 active:border-green-500 ${
-                      task.status === 'in_progress' ? 'border-blue-500 bg-blue-500/30' : 'border-slate-600'
+                    className={`h-7 w-7 shrink-0 rounded-full border-2 transition active:scale-90 active:border-green-400 ${
+                      task.status === 'in_progress' ? 'border-blue-400 bg-blue-500/30' : 'border-slate-500'
                     }`}
                   />
                   <button
@@ -297,7 +301,7 @@ export function WorkTaskList({
         {done.length > 0 && (
           <div className="mt-4">
             <div className="flex items-center justify-between">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Concluídas · {done.length} 🎉</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Concluídas · {done.length} 🎉</p>
               <button
                 onClick={() => {
                   if (window.confirm(`Limpar ${done.length} tarefa(s) concluída(s) de ${clientName}?`)) {
@@ -324,7 +328,7 @@ export function WorkTaskList({
                 ) : (
                   <div
                     key={task.id}
-                    className="flex animate-[task-complete-pop_0.35s_ease-out] items-center gap-2.5 rounded-lg border border-green-900 bg-green-950/30 px-3 py-2.5"
+                    className="flex animate-pop items-center gap-2.5 rounded-2xl border border-green-800/60 bg-green-950/30 px-3 py-2.5"
                   >
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs text-white">
                       ✓
