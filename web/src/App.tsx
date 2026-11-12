@@ -61,6 +61,13 @@ function RoutineApp() {
     return isTabKey(fromUrl) ? fromUrl : 'dashboard'
   })
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
+  // Optional day to open in the Hoje tab when navigating from the dashboard.
+  const [targetDate, setTargetDate] = useState<string | null>(null)
+
+  const navigate = (tab: TabKey, date?: string) => {
+    setTargetDate(date ?? null)
+    setActiveTab(tab)
+  }
 
   useEffect(() => {
     const url = new URL(window.location.href)
@@ -69,7 +76,8 @@ function RoutineApp() {
   }, [activeTab])
 
   const ActiveView = TABS.find((tab) => tab.key === activeTab)!.view as ComponentType<{
-    onNavigate: (tab: TabKey) => void
+    onNavigate: (tab: TabKey, date?: string) => void
+    initialDate?: string
   }>
   const initial = (user.email ?? '?')[0].toUpperCase()
 
@@ -96,7 +104,7 @@ function RoutineApp() {
 
       <main className="flex-1 overflow-y-auto">
         <Suspense fallback={<div className="p-4 text-sm text-slate-500">Carregando...</div>}>
-          <ActiveView onNavigate={setActiveTab} />
+          <ActiveView onNavigate={navigate} initialDate={targetDate ?? undefined} />
         </Suspense>
       </main>
 
@@ -106,7 +114,7 @@ function RoutineApp() {
           return (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => navigate(tab.key)}
               className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl py-2 text-[10px] font-semibold transition ${
                 active ? 'btn-primary text-white' : 'text-slate-400 active:bg-slate-800'
               }`}

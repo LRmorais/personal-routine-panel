@@ -85,10 +85,10 @@ function UpcomingSection({
   )
 }
 
-export function ReplanView() {
-  const [viewDate, setViewDate] = useState(todayDateString())
+export function ReplanView({ initialDate }: { initialDate?: string }) {
+  const [viewDate, setViewDate] = useState(initialDate ?? todayDateString())
   const [mode, setMode] = useState<'day' | 'week'>('day')
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(todayDateString()))
+  const [weekStart, setWeekStart] = useState(() => startOfWeek(initialDate ?? todayDateString()))
 
   return (
     <div className="flex h-full flex-col p-4">

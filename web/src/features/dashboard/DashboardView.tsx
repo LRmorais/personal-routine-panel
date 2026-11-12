@@ -141,19 +141,24 @@ function TodayFocus({ onOpen }: { onOpen: () => void }) {
   )
 }
 
-function Overdue({ onOpen }: { onOpen: () => void }) {
+function Overdue({ onOpen }: { onOpen: (date: string) => void }) {
   const { tasks } = useOverdueTasks()
   if (tasks.length === 0) return null
   return (
-    <Section title={`${tasks.length} tarefa${tasks.length === 1 ? '' : 's'} atrasada${tasks.length === 1 ? '' : 's'}`} icon="⚠️" tone="warn" action="Resolver" onAction={onOpen}>
+    <Section title={`${tasks.length} tarefa${tasks.length === 1 ? '' : 's'} atrasada${tasks.length === 1 ? '' : 's'}`} icon="⚠️" tone="warn" action="Resolver" onAction={() => onOpen(tasks[0].planDate)}>
       <p className="text-xs text-amber-200/80">
         Ficaram abertas em dias anteriores. Conclua, adie com motivo ou marque como não feita.
       </p>
       <ul className="mt-2 flex flex-col gap-1.5">
         {tasks.slice(0, 3).map((task) => (
-          <li key={task.id} className="flex items-center justify-between gap-2 rounded-lg bg-slate-900/60 px-3 py-2 text-sm">
-            <span className="truncate text-slate-200">{task.title}</span>
-            <span className="shrink-0 text-xs text-amber-300">{formatDayLabel(task.planDate)}</span>
+          <li key={task.id}>
+            <button
+              onClick={() => onOpen(task.planDate)}
+              className="flex w-full items-center justify-between gap-2 rounded-lg bg-slate-900/60 px-3 py-2 text-left text-sm active:bg-slate-800"
+            >
+              <span className="truncate text-slate-200">{task.title}</span>
+              <span className="shrink-0 text-xs text-amber-300">{formatDayLabel(task.planDate)} ›</span>
+            </button>
           </li>
         ))}
       </ul>
@@ -195,7 +200,7 @@ function WorkOverview({ onOpen }: { onOpen: () => void }) {
   )
 }
 
-function Upcoming({ onOpen }: { onOpen: () => void }) {
+function Upcoming({ onOpen }: { onOpen: (date: string) => void }) {
   const { tasks, loading } = useUpcomingTasks(todayDateString())
   if (loading || tasks.length === 0) return null
 
@@ -207,15 +212,17 @@ function Upcoming({ onOpen }: { onOpen: () => void }) {
   }
 
   return (
-    <Section title="Próximos dias" icon="🗓️" action="Ver semana" onAction={onOpen}>
+    <Section title="Próximos dias" icon="🗓️" action="Ver semana" onAction={() => onOpen(groups[0].date)}>
       <ul className="flex flex-col gap-2">
         {groups.slice(0, 3).map((group) => (
-          <li key={group.date} className="flex items-start gap-3">
-            <span className="w-16 shrink-0 pt-0.5 text-xs font-semibold text-blue-300">{formatDayLabel(group.date)}</span>
-            <span className="min-w-0 flex-1 text-sm text-slate-300">
-              {group.titles.slice(0, 2).join(' · ')}
-              {group.titles.length > 2 && <span className="text-slate-500"> +{group.titles.length - 2}</span>}
-            </span>
+          <li key={group.date}>
+            <button onClick={() => onOpen(group.date)} className="flex w-full items-start gap-3 text-left">
+              <span className="w-16 shrink-0 pt-0.5 text-xs font-semibold text-blue-300">{formatDayLabel(group.date)}</span>
+              <span className="min-w-0 flex-1 text-sm text-slate-300">
+                {group.titles.slice(0, 2).join(' · ')}
+                {group.titles.length > 2 && <span className="text-slate-500"> +{group.titles.length - 2}</span>}
+              </span>
+            </button>
           </li>
         ))}
       </ul>
@@ -264,16 +271,16 @@ function WeekSummary({ onOpen }: { onOpen: () => void }) {
   )
 }
 
-export function DashboardView({ onNavigate }: { onNavigate: (tab: DashboardTarget) => void }) {
+export function DashboardView({ onNavigate }: { onNavigate: (tab: DashboardTarget, date?: string) => void }) {
   return (
     <div className="flex flex-col gap-3 p-4 pb-6">
       <h2 className="text-2xl font-extrabold tracking-tight text-slate-50">Início</h2>
       <TodayHero />
-      <Overdue onOpen={() => onNavigate('replan')} />
+      <Overdue onOpen={(date) => onNavigate('replan', date)} />
       <TodayFocus onOpen={() => onNavigate('replan')} />
       <QuickCapture onOpenInbox={() => onNavigate('inbox')} />
       <WorkOverview onOpen={() => onNavigate('work')} />
-      <Upcoming onOpen={() => onNavigate('replan')} />
+      <Upcoming onOpen={(date) => onNavigate('replan', date)} />
       <WeekSummary onOpen={() => onNavigate('reports')} />
     </div>
   )
