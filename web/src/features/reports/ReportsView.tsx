@@ -9,7 +9,6 @@ import {
   startOfWeek,
   todayDateString,
 } from '../../lib/dates'
-import { BackfillPanel } from './BackfillPanel'
 import { compareStats, computeReportStats } from './reportStats'
 import { currentRangeFor, useReportData, type PeriodType } from './useReportData'
 
@@ -209,7 +208,6 @@ export function ReportsView() {
         </>
       )}
 
-      <BackfillPanel />
     </div>
   )
 }
