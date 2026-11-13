@@ -11,16 +11,12 @@ const ReplanView = lazy(() =>
   import('./features/replanning/ReplanView').then((m) => ({ default: m.ReplanView })),
 )
 const WorkView = lazy(() => import('./features/work/WorkView').then((m) => ({ default: m.WorkView })))
-const ReportsView = lazy(() =>
-  import('./features/reports/ReportsView').then((m) => ({ default: m.ReportsView })),
-)
 
 const TABS = [
   { key: 'dashboard', label: 'Início', icon: '🏠', view: DashboardView },
   { key: 'inbox', label: 'Inbox', icon: '📥', view: InboxView },
   { key: 'replan', label: 'Hoje', icon: '🎯', view: ReplanView },
   { key: 'work', label: 'Trabalho', icon: '💼', view: WorkView },
-  { key: 'reports', label: 'Evolução', icon: '📈', view: ReportsView },
 ] as const
 
 type TabKey = (typeof TABS)[number]['key']

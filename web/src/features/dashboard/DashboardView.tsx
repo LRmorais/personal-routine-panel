@@ -7,7 +7,7 @@ import { TodayHero } from '../progress/TodayHero'
 import { useOverdueTasks, useTasks, useUpcomingTasks } from '../replanning/useTasks'
 import { useWorkClients } from '../work/useWorkClients'
 
-export type DashboardTarget = 'inbox' | 'replan' | 'work' | 'reports'
+export type DashboardTarget = 'inbox' | 'replan' | 'work'
 
 function Section({
   title,
@@ -230,7 +230,7 @@ function Upcoming({ onOpen }: { onOpen: (date: string) => void }) {
   )
 }
 
-function WeekSummary({ onOpen }: { onOpen: () => void }) {
+function WeekSummary() {
   const { week, doneThisWeek, loading } = useProgress()
   if (loading) return null
   const totalWeek = week.reduce((sum, d) => sum + d.total, 0)
@@ -239,7 +239,7 @@ function WeekSummary({ onOpen }: { onOpen: () => void }) {
   const today = todayDateString()
 
   return (
-    <Section title="Sua semana" icon="📈" action="Evolução" onAction={onOpen}>
+    <Section title="Sua semana" icon="📈">
       <div className="flex items-end justify-between gap-1.5">
         {week.map((day) => {
           const doneH = (day.done / max) * 64
@@ -281,7 +281,7 @@ export function DashboardView({ onNavigate }: { onNavigate: (tab: DashboardTarge
       <QuickCapture onOpenInbox={() => onNavigate('inbox')} />
       <WorkOverview onOpen={() => onNavigate('work')} />
       <Upcoming onOpen={(date) => onNavigate('replan', date)} />
-      <WeekSummary onOpen={() => onNavigate('reports')} />
+      <WeekSummary />
     </div>
   )
 }
