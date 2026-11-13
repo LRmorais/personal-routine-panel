@@ -104,7 +104,7 @@ function RoutineApp() {
         </Suspense>
       </main>
 
-      <nav className="mx-3 mb-[calc(env(safe-area-inset-bottom)+0.5rem)] flex gap-1 rounded-2xl border border-slate-700/60 bg-slate-900/90 p-1.5 shadow-[0_-8px_30px_-12px_rgb(0_0_0/0.8)] backdrop-blur">
+      <nav className="flex gap-1 border-t border-slate-700/60 bg-slate-900/95 px-2 pb-[calc(env(safe-area-inset-bottom)+0.375rem)] pt-1.5 shadow-[0_-8px_30px_-12px_rgb(0_0_0/0.8)] backdrop-blur">
         {TABS.map((tab) => {
           const active = activeTab === tab.key
           return (
