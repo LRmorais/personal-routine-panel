@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState, type ComponentType } from 'react'
 import { AuthGate, useAuth } from './auth/AuthGate'
 import { ActionSheet } from './components/ActionSheet'
+import { Logo } from './components/Logo'
 import { ProgressProvider, useProgress } from './features/progress/ProgressProvider'
 
 const DashboardView = lazy(() =>
@@ -81,9 +82,7 @@ function RoutineApp() {
     <div className="app-bg fixed inset-0 flex flex-col overflow-hidden text-slate-100">
       <header className="flex items-center justify-between px-4 pb-2 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl btn-primary text-lg font-black text-white">
-            R
-          </span>
+          <Logo size={36} />
           <span className="text-xl font-extrabold tracking-tight text-slate-50">Ritmo</span>
         </div>
         <div className="flex items-center gap-2">

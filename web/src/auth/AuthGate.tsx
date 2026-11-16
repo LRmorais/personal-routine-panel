@@ -6,6 +6,7 @@ import {
   type User,
 } from 'firebase/auth'
 import { createContext, useContext, useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { Logo } from '../components/Logo'
 import { auth } from '../firebase'
 
 type AuthContextValue = {
@@ -64,9 +65,7 @@ function LoginScreen() {
   return (
     <div className="app-bg fixed inset-0 flex flex-col items-center justify-center gap-5 px-6 text-slate-100">
       <div className="flex flex-col items-center gap-3">
-        <span className="flex h-16 w-16 items-center justify-center rounded-3xl btn-primary text-3xl font-black text-white">
-          R
-        </span>
+        <Logo size={72} />
         <h1 className="text-3xl font-extrabold tracking-tight">Ritmo</h1>
         <p className="max-w-60 text-center text-sm text-slate-400">Um dia de cada vez. Construa sua sequência.</p>
       </div>
