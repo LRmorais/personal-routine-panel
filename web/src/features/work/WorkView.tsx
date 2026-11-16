@@ -18,7 +18,7 @@ export function WorkView() {
     null
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto p-4">
+    <div className="flex h-full min-w-0 flex-col overflow-x-hidden overflow-y-auto p-4">
       <WorkClientList
         {...workClients}
         selectedClientId={selectedClientId}

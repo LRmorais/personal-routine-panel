@@ -91,7 +91,7 @@ export function ReplanView({ initialDate }: { initialDate?: string }) {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(initialDate ?? todayDateString()))
 
   return (
-    <div className="flex h-full flex-col p-4">
+    <div className="flex h-full min-w-0 flex-col overflow-x-hidden p-4">
       <h2 className="text-2xl font-extrabold tracking-tight text-slate-50">Hoje</h2>
       <p className="mt-1 text-sm text-slate-400">
         No fim do dia, toda tarefa pendente precisa de um motivo pra ir pra amanhã.
@@ -127,7 +127,7 @@ export function ReplanView({ initialDate }: { initialDate?: string }) {
             <DayNavigator date={viewDate} onChange={setViewDate} />
           </div>
 
-          <div className="flex flex-1 flex-col overflow-y-auto pb-4">
+          <div className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden pb-4">
             <div className="mt-3">
               <TodayHero />
             </div>

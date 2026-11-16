@@ -252,7 +252,7 @@ export function WorkTaskList({
                     onClick={() => setExpandedTaskId(expandedTaskId === task.id ? null : task.id)}
                     className="min-w-0 flex-1 text-left text-slate-100"
                   >
-                    <span className="truncate">{task.title}</span>
+                    <span className="break-words">{task.title}</span>
                     {task.status === 'in_progress' && (
                       <span className="ml-2 text-xs text-blue-400">em andamento</span>
                     )}

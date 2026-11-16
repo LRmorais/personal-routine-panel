@@ -98,13 +98,13 @@ function RoutineApp() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden">
         <Suspense fallback={<div className="p-4 text-sm text-slate-500">Carregando...</div>}>
           <ActiveView onNavigate={navigate} initialDate={targetDate ?? undefined} />
         </Suspense>
       </main>
 
-      <nav className="flex items-end gap-1 border-t border-slate-700/60 bg-slate-900/95 px-2 pb-1 pt-1 shadow-[0_-8px_30px_-12px_rgb(0_0_0/0.8)] backdrop-blur">
+      <nav className="app-nav flex items-end gap-1 border-t border-slate-700/60 bg-slate-900/95 px-2 pb-1 pt-1 shadow-[0_-8px_30px_-12px_rgb(0_0_0/0.8)] backdrop-blur">
         {TABS.map((tab) => {
           const active = activeTab === tab.key
           return (

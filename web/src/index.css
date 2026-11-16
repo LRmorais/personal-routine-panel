@@ -71,6 +71,9 @@ body,
 
 body {
   margin: 0;
+  /* long unbroken words (urls, etc.) wrap instead of widening the page */
+  overflow-wrap: anywhere;
+  overscroll-behavior-x: none;
   background: #0f0c22;
   -webkit-tap-highlight-color: transparent;
 }
@@ -182,5 +185,16 @@ textarea:focus {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* Installed PWA (home-screen) mode: the nav sits right on the screen edge, so drop
+   the extra bottom padding that only makes sense inside a browser. */
+@media (display-mode: standalone) {
+  .app-nav {
+    padding-bottom: 0;
+  }
+  .app-nav > button {
+    padding-bottom: 0.25rem;
   }
 }
