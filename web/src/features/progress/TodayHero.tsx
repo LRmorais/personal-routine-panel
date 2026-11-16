@@ -68,6 +68,7 @@ export function TodayHero() {
   const { loading, streak, bestStreak, atRisk, today, week, doneThisWeek } = useProgress()
   if (loading) return null
 
+  const todayDate = today.date
   const ratio = today.total === 0 ? 0 : today.done / today.total
   const badge = milestone(streak)
 
@@ -97,8 +98,8 @@ export function TodayHero() {
       </div>
 
       <div className="mt-4 grid grid-cols-7 gap-1.5">
-        {week.map((day, i) => {
-          const isToday = i === week.length - 1
+        {week.map((day) => {
+          const isToday = day.date === todayDate
           const hit = day.done > 0
           return (
             <div key={day.date} className="flex flex-col items-center gap-1">
@@ -123,7 +124,7 @@ export function TodayHero() {
 
       <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
         <span>
-          <b className="text-slate-100">{doneThisWeek}</b> concluídas nos últimos 7 dias
+          <b className="text-slate-100">{doneThisWeek}</b> concluídas nesta semana
         </span>
         <span>
           Recorde: <b className="text-slate-100">{bestStreak}</b> dia{bestStreak === 1 ? '' : 's'}

@@ -2,7 +2,7 @@ import { collection, onSnapshot, query, where } from 'firebase/firestore'
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useAuth } from '../../auth/AuthGate'
 import { db } from '../../firebase'
-import { addDays, todayDateString } from '../../lib/dates'
+import { addDays, startOfWeek, todayDateString } from '../../lib/dates'
 
 const HISTORY_DAYS = 120
 
@@ -16,7 +16,7 @@ type ProgressValue = {
   /** Today has no completed task yet but yesterday kept the streak alive. */
   atRisk: boolean
   today: DayProgress
-  /** Last 7 days, oldest first, ending today. */
+  /** The current calendar week, Monday to Sunday (days after today are still empty). */
   week: DayProgress[]
   doneThisWeek: number
 }
@@ -93,7 +93,8 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    const week = Array.from({ length: 7 }, (_, i) => get(addDays(today, i - 6)))
+    const weekStart = startOfWeek(today)
+    const week = Array.from({ length: 7 }, (_, i) => get(addDays(weekStart, i)))
     return {
       loading,
       streak,
