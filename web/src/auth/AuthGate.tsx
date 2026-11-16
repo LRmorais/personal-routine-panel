@@ -62,7 +62,7 @@ function LoginScreen() {
   }
 
   return (
-    <div className="app-bg flex h-dvh flex-col items-center justify-center gap-5 px-6 text-slate-100">
+    <div className="app-bg fixed inset-0 flex flex-col items-center justify-center gap-5 px-6 text-slate-100">
       <div className="flex flex-col items-center gap-3">
         <span className="flex h-16 w-16 items-center justify-center rounded-3xl btn-primary text-3xl font-black text-white">
           R
@@ -125,7 +125,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div className="flex h-dvh items-center justify-center text-slate-400">
+      <div className="fixed inset-0 flex items-center justify-center text-slate-400">
         Carregando...
       </div>
     )

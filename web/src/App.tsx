@@ -78,7 +78,7 @@ function RoutineApp() {
   const initial = (user.email ?? '?')[0].toUpperCase()
 
   return (
-    <div className="app-bg flex h-dvh flex-col overflow-hidden text-slate-100">
+    <div className="app-bg fixed inset-0 flex flex-col overflow-hidden text-slate-100">
       <header className="flex items-center justify-between px-4 pb-2 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
         <div className="flex items-center gap-2.5">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl btn-primary text-lg font-black text-white">
@@ -104,18 +104,18 @@ function RoutineApp() {
         </Suspense>
       </main>
 
-      <nav className="flex gap-1 border-t border-slate-700/60 bg-slate-900/95 px-2 pb-[calc(env(safe-area-inset-bottom)+0.375rem)] pt-1.5 shadow-[0_-8px_30px_-12px_rgb(0_0_0/0.8)] backdrop-blur">
+      <nav className="flex items-end gap-1 border-t border-slate-700/60 bg-slate-900/95 px-2 pb-1 pt-1 shadow-[0_-8px_30px_-12px_rgb(0_0_0/0.8)] backdrop-blur">
         {TABS.map((tab) => {
           const active = activeTab === tab.key
           return (
             <button
               key={tab.key}
               onClick={() => navigate(tab.key)}
-              className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl py-2 text-[10px] font-semibold transition ${
+              className={`flex min-w-0 flex-1 flex-col items-center gap-px rounded-xl py-1.5 text-[10px] font-semibold transition ${
                 active ? 'btn-primary text-white' : 'text-slate-400 active:bg-slate-800'
               }`}
             >
-              <span className={`text-lg leading-none ${active ? '' : 'opacity-70 grayscale'}`}>{tab.icon}</span>
+              <span className={`text-base leading-none ${active ? '' : 'opacity-70 grayscale'}`}>{tab.icon}</span>
               {tab.label}
             </button>
           )
